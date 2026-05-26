@@ -298,26 +298,30 @@ struct DashboardView: View {
     // MARK: - Financial Overview Donut Chart
 
     private var profitLossChart: some View {
-        let rev = vm.revenue
-        let exp = vm.expenses
-        let out = vm.outstanding
-        let total = rev + exp + out
-        let hasSeg = total > 0
+        let rev      = vm.revenue
+        let exp      = vm.expenses
+        let net      = rev - exp
+        let pl       = abs(net)
+        let isProfit = net >= 0
+        let total    = rev + exp + pl
+        let hasSeg   = total > 0
 
-        let purple = Color(red: 0.49, green: 0.23, blue: 0.93)
-        let pink   = Color(red: 0.91, green: 0.12, blue: 0.55)
-        let orange = Color(red: 0.98, green: 0.45, blue: 0.09)
+        let purple  = Color(red: 0.49, green: 0.23, blue: 0.93)
+        let pink    = Color(red: 0.91, green: 0.12, blue: 0.55)
+        let plColor = isProfit ? Color(red: 0.06, green: 0.73, blue: 0.51)   // #10B981 green
+                               : Color(red: 0.94, green: 0.27, blue: 0.27)   // #EF4444 red
 
-        let colors:  [Color]  = [purple, pink, orange]
-        let labels:  [String] = ["Revenue", "Expenses", "Outstanding"]
-        let descs:   [String] = ["from paid invoices", "total outgoing spend", "pending invoices"]
-        let values:  [Double] = [rev, exp, out]
+        let colors:  [Color]  = [purple, pink, plColor]
+        let labels:  [String] = ["Revenue", "Expenses", isProfit ? "Profit" : "Loss"]
+        let descs:   [String] = ["from paid invoices", "total outgoing spend",
+                                 isProfit ? "after all expenses" : "expenses exceed revenue"]
+        let values:  [Double] = [rev, exp, pl]
 
         // Fractions and trim ranges (3° gap between segments)
         let gapF: Double = 3.0 / 360.0
         let availF: Double = hasSeg ? 1.0 - gapF * 3 : 1.0
         let rawFracs: [Double] = hasSeg
-            ? [rev / total, exp / total, out / total]
+            ? [rev / total, exp / total, pl / total]
             : [1.0 / 3, 1.0 / 3, 1.0 / 3]
         let spanFracs = rawFracs.map { $0 * availF }
 
@@ -358,21 +362,21 @@ struct DashboardView: View {
 
                     // Centre labels
                     VStack(spacing: 2) {
-                        Text("FINANCIAL")
+                        Text("NET")
                             .font(.system(size: 7.5, weight: .black))
                             .foregroundStyle(purple)
                             .tracking(0.5)
                         HStack(spacing: 3) {
                             Circle().fill(purple).frame(width: 4.5, height: 4.5)
                             Circle().fill(pink).frame(width: 4.5, height: 4.5)
-                            Circle().fill(orange).frame(width: 4.5, height: 4.5)
+                            Circle().fill(plColor).frame(width: 4.5, height: 4.5)
                         }
-                        Text(fmtShort(rev))
+                        Text(fmtShort(pl))
                             .font(.system(size: 13, weight: .black, design: .rounded))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(plColor)
                             .minimumScaleFactor(0.6)
                             .lineLimit(1)
-                        Text("revenue")
+                        Text(isProfit ? "profit" : "loss")
                             .font(.system(size: 6.5))
                             .foregroundStyle(.secondary)
                     }
