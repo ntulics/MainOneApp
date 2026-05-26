@@ -153,21 +153,21 @@ struct DashboardView: View {
 
     private var heroCard: some View {
         ZStack(alignment: .topTrailing) {
-            // Light-mode gradient: rich indigo-violet
+            // Light-mode: deep navy — strong contrast on light grey background
             LinearGradient(
                 colors: [
-                    Color(red: 0.18, green: 0.10, blue: 0.42),
-                    Color(red: 0.28, green: 0.16, blue: 0.60),
+                    Color(red: 0.059, green: 0.090, blue: 0.165),
+                    Color(red: 0.118, green: 0.176, blue: 0.294),
                 ],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             )
             .opacity(colorScheme == .light ? 1 : 0)
 
-            // Dark-mode gradient: deep navy (fits naturally into dark bg)
+            // Dark-mode: dark charcoal-slate — elevated above black bg without clashing
             LinearGradient(
                 colors: [
-                    Color(red: 0.059, green: 0.090, blue: 0.165),
-                    Color(red: 0.118, green: 0.176, blue: 0.294),
+                    Color(red: 0.10, green: 0.11, blue: 0.15),
+                    Color(red: 0.17, green: 0.19, blue: 0.26),
                 ],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             )
