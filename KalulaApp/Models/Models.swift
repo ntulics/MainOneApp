@@ -309,6 +309,32 @@ struct CreateMobileQuoteRequest: Encodable {
     let lineItems: [CreateLineItem]
 }
 
+struct UpdateInvoiceRequest: Encodable {
+    let status:      String?
+    let projectName: String?
+    let dueDate:     String?
+    let notes:       String?
+    let taxRate:     Double?
+    let lineItems:   [CreateLineItem]?
+}
+
+struct UpdateQuoteRequest: Encodable {
+    let status:      String?
+    let projectName: String?
+    let validUntil:  String?
+    let notes:       String?
+    let taxRate:     Double?
+    let lineItems:   [CreateLineItem]?
+}
+
+struct UpdateContactRequest: Encodable {
+    let firstName: String
+    let lastName:  String
+    let email:     String?
+    let phone:     String?
+    let status:    String
+}
+
 // MARK: - API Error
 
 struct APIError: Codable, Error {

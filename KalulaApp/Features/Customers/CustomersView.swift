@@ -242,8 +242,12 @@ struct NewContactSheet: View {
 // MARK: - Customer detail
 
 struct CustomerDetailView: View {
-    let contact: CRMContact
-    @Environment(\.dismiss) private var dismiss
+    @State private var contact: CRMContact
+    @State private var showEdit = false
+
+    init(contact: CRMContact) {
+        _contact = State(initialValue: contact)
+    }
 
     var body: some View {
         ScrollView {
@@ -321,6 +325,16 @@ struct CustomerDetailView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(contact.displayName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Edit") { showEdit = true }.fontWeight(.semibold)
+            }
+        }
+        .sheet(isPresented: $showEdit) {
+            EditContactSheet(contact: contact, isPresented: $showEdit) { updated in
+                contact = updated
+            }
+        }
     }
 
     private func avatarColor(_ name: String) -> Color {
@@ -378,5 +392,94 @@ struct ContactInfoRow: View {
             .padding(.vertical, 12)
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Edit contact sheet
+
+struct EditContactSheet: View {
+    let contact:      CRMContact
+    @Binding var isPresented: Bool
+    let onSaved:      (CRMContact) -> Void
+
+    @State private var firstName: String
+    @State private var lastName:  String
+    @State private var email:     String
+    @State private var phone:     String
+    @State private var status:    String
+    @State private var saving     = false
+    @State private var error      = ""
+
+    private let statuses = ["LEAD", "PROSPECT", "CLIENT"]
+
+    init(contact: CRMContact, isPresented: Binding<Bool>, onSaved: @escaping (CRMContact) -> Void) {
+        self.contact      = contact
+        self._isPresented = isPresented
+        self.onSaved      = onSaved
+        _firstName = State(initialValue: contact.firstName)
+        _lastName  = State(initialValue: contact.lastName)
+        _email     = State(initialValue: contact.email ?? "")
+        _phone     = State(initialValue: contact.phone ?? "")
+        _status    = State(initialValue: contact.status ?? "LEAD")
+    }
+
+    private var isValid: Bool { !firstName.isEmpty && !lastName.isEmpty }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Name") {
+                    TextField("First name", text: $firstName).textContentType(.givenName)
+                    TextField("Last name",  text: $lastName).textContentType(.familyName)
+                }
+
+                Section("Contact details") {
+                    TextField("Email address", text: $email)
+                        .textContentType(.emailAddress).keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                    TextField("Phone number", text: $phone)
+                        .textContentType(.telephoneNumber).keyboardType(.phonePad)
+                }
+
+                Section("Status") {
+                    Picker("Status", selection: $status) {
+                        ForEach(statuses, id: \.self) { s in Text(s.capitalized).tag(s) }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                if !error.isEmpty {
+                    Section { Text(error).foregroundStyle(.red).font(.caption) }
+                }
+            }
+            .navigationTitle("Edit Client")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading)  { Button("Cancel") { isPresented = false } }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { Task { await save() } } label: {
+                        if saving { ProgressView().scaleEffect(0.8) } else { Text("Save").fontWeight(.semibold) }
+                    }
+                    .disabled(!isValid || saving)
+                }
+            }
+        }
+    }
+
+    private func save() async {
+        saving = true; error = ""
+        do {
+            let body = UpdateContactRequest(
+                firstName: firstName.trimmingCharacters(in: .whitespaces),
+                lastName:  lastName.trimmingCharacters(in: .whitespaces),
+                email:     email.isEmpty ? nil : email,
+                phone:     phone.isEmpty ? nil : phone,
+                status:    status
+            )
+            let updated: CRMContact = try await APIService.shared.put("/crm/contacts/\(contact.id)", body: body)
+            onSaved(updated)
+            isPresented = false
+        } catch { self.error = error.localizedDescription }
+        saving = false
     }
 }

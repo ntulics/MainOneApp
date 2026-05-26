@@ -56,7 +56,7 @@ struct MainTabView: View {
                     .tabItem { Label("Clients", systemImage: "person.2.fill") }
 
                 InvoicesListView()
-                    .tabItem { Label("Sales", systemImage: "doc.text.fill") }
+                    .tabItem { Label("Invoices", systemImage: "doc.text.fill") }
 
                 QuotesListView()
                     .tabItem { Label("Quotes", systemImage: "list.clipboard.fill") }
