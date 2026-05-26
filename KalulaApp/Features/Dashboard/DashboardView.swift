@@ -153,15 +153,25 @@ struct DashboardView: View {
 
     private var heroCard: some View {
         ZStack(alignment: .topTrailing) {
-            // Gradient adapts to color scheme
+            // Light-mode gradient: deep navy
             LinearGradient(
-                colors: colorScheme == .dark
-                    ? [Color(red: 0.10, green: 0.12, blue: 0.24), Color(red: 0.18, green: 0.22, blue: 0.40)]
-                    : [Color(red: 0.059, green: 0.090, blue: 0.165), Color(red: 0.118, green: 0.176, blue: 0.294)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                colors: [
+                    Color(red: 0.059, green: 0.090, blue: 0.165),
+                    Color(red: 0.118, green: 0.176, blue: 0.294),
+                ],
+                startPoint: .topLeading, endPoint: .bottomTrailing
             )
-            .animation(.easeInOut(duration: 0.4), value: colorScheme)
+            .opacity(colorScheme == .light ? 1 : 0)
+
+            // Dark-mode gradient: rich indigo-violet (clearly elevated off black bg)
+            LinearGradient(
+                colors: [
+                    Color(red: 0.18, green: 0.10, blue: 0.42),
+                    Color(red: 0.28, green: 0.16, blue: 0.60),
+                ],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+            .opacity(colorScheme == .dark ? 1 : 0)
 
             // Orange glow (top right)
             Circle()
@@ -169,15 +179,15 @@ struct DashboardView: View {
                 .frame(width: 180, height: 180)
                 .blur(radius: 55)
                 .offset(x: 40, y: -55)
-                .opacity(0.22)
+                .opacity(0.28)
 
-            // Blue glow (bottom left)
+            // Blue/purple glow (bottom left)
             Circle()
-                .fill(Color.blue)
+                .fill(colorScheme == .dark ? Color.purple : Color.blue)
                 .frame(width: 140, height: 140)
                 .blur(radius: 65)
                 .offset(x: -120, y: 60)
-                .opacity(0.16)
+                .opacity(0.20)
 
             // Content
             VStack(alignment: .leading, spacing: 0) {
@@ -229,6 +239,7 @@ struct DashboardView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .shadow(color: Color.black.opacity(0.18), radius: 16, y: 6)
+        .animation(.easeInOut(duration: 0.45), value: colorScheme)
     }
 
     // MARK: - Mini bar chart
