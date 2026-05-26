@@ -78,7 +78,7 @@ struct CustomersView: View {
                 }
                 .searchable(text: $vm.searchText, prompt: "Search clients")
                 .navigationTitle("Clients")
-                .navigationBarTitleDisplayMode(.large)
+                .navigationBarTitleDisplayMode(.inline)
                 .navigationDestination(for: CRMContact.self) { CustomerDetailView(contact: $0) }
                 .task { await vm.load() }
 

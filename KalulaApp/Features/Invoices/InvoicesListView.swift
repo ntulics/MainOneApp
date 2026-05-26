@@ -114,7 +114,7 @@ struct InvoicesListView: View {
                 }
                 .searchable(text: $vm.searchText, prompt: "Search invoices")
                 .navigationTitle("Invoices")
-                .navigationBarTitleDisplayMode(.large)
+                .navigationBarTitleDisplayMode(.inline)
                 .navigationDestination(for: Invoice.self) { invoice in
                     InvoiceDetailView(invoice: invoice) { updated in
                         if let idx = vm.invoices.firstIndex(where: { $0.id == updated.id }) {

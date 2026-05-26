@@ -309,6 +309,25 @@ struct CreateMobileQuoteRequest: Encodable {
     let lineItems: [CreateLineItem]
 }
 
+struct CompanySettings: Codable {
+    let name:       String?
+    let email:      String?
+    let phone:      String?
+    let address:    String?
+    let logoBase64: String?
+    let taxRate:    Double?
+    let currency:   String?
+}
+
+struct UpdateCompanySettings: Encodable {
+    let name:     String?
+    let email:    String?
+    let phone:    String?
+    let address:  String?
+    let taxRate:  Double?
+    let currency: String?
+}
+
 struct UpdateInvoiceRequest: Encodable {
     let status:      String?
     let projectName: String?

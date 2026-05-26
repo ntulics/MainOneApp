@@ -112,7 +112,7 @@ struct QuotesListView: View {
                 }
                 .searchable(text: $vm.searchText, prompt: "Search quotes")
                 .navigationTitle("Quotes")
-                .navigationBarTitleDisplayMode(.large)
+                .navigationBarTitleDisplayMode(.inline)
                 .navigationDestination(for: Quote.self) { QuoteDetailView(quote: $0) }
                 .task { await vm.load() }
 

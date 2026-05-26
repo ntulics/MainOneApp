@@ -94,6 +94,7 @@ struct DashboardView: View {
     @EnvironmentObject var auth:     AuthService
     @EnvironmentObject var appState: AppState
     @StateObject private var vm = DashboardViewModel()
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ScrollView {
@@ -130,13 +131,6 @@ struct DashboardView: View {
                     .foregroundStyle(.primary)
             }
             Spacer()
-            Button { appState.showMore = true } label: {
-                Image(systemName: "square.grid.2x2")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(.primary)
-                    .frame(width: 40, height: 40)
-                    .background(Color(.secondarySystemBackground), in: Circle())
-            }
             Circle()
                 .fill(Color.orange.gradient)
                 .frame(width: 42, height: 42)
@@ -145,6 +139,13 @@ struct DashboardView: View {
                         .font(.subheadline.bold())
                         .foregroundStyle(.white)
                 )
+            Button { appState.showMore = true } label: {
+                Image(systemName: "square.grid.2x2")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(.primary)
+                    .frame(width: 40, height: 40)
+                    .background(Color(.secondarySystemBackground), in: Circle())
+            }
         }
     }
 
@@ -152,15 +153,15 @@ struct DashboardView: View {
 
     private var heroCard: some View {
         ZStack(alignment: .topTrailing) {
-            // Dark gradient background
+            // Gradient adapts to color scheme
             LinearGradient(
-                colors: [
-                    Color(red: 0.059, green: 0.090, blue: 0.165),
-                    Color(red: 0.118, green: 0.176, blue: 0.294),
-                ],
+                colors: colorScheme == .dark
+                    ? [Color(red: 0.10, green: 0.12, blue: 0.24), Color(red: 0.18, green: 0.22, blue: 0.40)]
+                    : [Color(red: 0.059, green: 0.090, blue: 0.165), Color(red: 0.118, green: 0.176, blue: 0.294)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
+            .animation(.easeInOut(duration: 0.4), value: colorScheme)
 
             // Orange glow (top right)
             Circle()
