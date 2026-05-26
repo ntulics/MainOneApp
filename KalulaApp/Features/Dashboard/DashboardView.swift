@@ -2,6 +2,10 @@ import SwiftUI
 
 // MARK: - View Model
 
+private struct ReceiptItem: Decodable {
+    let total: Double?
+}
+
 @MainActor
 final class DashboardViewModel: ObservableObject {
     @Published var invoices: [Invoice] = []
@@ -39,6 +43,7 @@ final class DashboardViewModel: ObservableObject {
     var recentInvoices: [Invoice] { Array(invoices.prefix(6)) }
 
     @Published var fiscalYearEndMonth: Int = 12
+    @Published var expenses: Double = 0
 
     var monthlyData: [(label: String, value: Double, isCurrent: Bool)] {
         let cal = Calendar.current
@@ -89,9 +94,11 @@ final class DashboardViewModel: ObservableObject {
         async let invTask:      [Invoice]          = (try? await APIService.shared.get("/invoices"))        ?? []
         async let qtTask:       [Quote]            = (try? await APIService.shared.get("/quotes"))          ?? []
         async let settingsTask: CompanySettings?   = try? await APIService.shared.get("/settings/company")
-        let (i, q, s) = await (invTask, qtTask, settingsTask)
+        async let receiptsTask: [ReceiptItem]      = (try? await APIService.shared.get("/receipts"))       ?? []
+        let (i, q, s, r) = await (invTask, qtTask, settingsTask, receiptsTask)
         invoices  = i
         quotes    = q
+        expenses  = r.reduce(0) { $0 + ($1.total ?? 0) }
         if let endMonth = s?.settings?.fiscalYearEndMonth { fiscalYearEndMonth = endMonth }
         isLoading = false
     }
@@ -290,16 +297,17 @@ struct DashboardView: View {
     // MARK: - Financial rings card
 
     private var financialRingsCard: some View {
-        let total = max(vm.revenue + vm.outstanding + vm.overdue, 1)
+        let profit = max(0, vm.revenue - vm.expenses)
+        let ref    = max(vm.revenue, 1)
         return VStack(alignment: .leading, spacing: 12) {
             Text("Financial Profile")
                 .font(.headline)
                 .padding(.horizontal, 20)
 
             HStack(spacing: 12) {
-                FinancialRingView(label: "Collected",   value: vm.revenue,      total: total, color: .green)
-                FinancialRingView(label: "Outstanding", value: vm.outstanding,  total: total, color: Color(red: 0, green: 0.478, blue: 1))
-                FinancialRingView(label: "Overdue",     value: vm.overdue,      total: total, color: Color(red: 1, green: 0.231, blue: 0.188))
+                FinancialRingView(label: "Revenue",  value: vm.revenue,  pct: 1.0,                         color: .green)
+                FinancialRingView(label: "Expenses", value: vm.expenses, pct: min(vm.expenses / ref, 1.0), color: Color(red: 1, green: 0.231, blue: 0.188))
+                FinancialRingView(label: "Profit",   value: profit,      pct: max(0, profit / ref),        color: Color(red: 0, green: 0.478, blue: 1))
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
@@ -563,10 +571,8 @@ struct TransactionRow: View {
 struct FinancialRingView: View {
     let label: String
     let value: Double
-    let total: Double
+    let pct:   Double
     let color: Color
-
-    private var pct: Double { value / max(total, 1) }
 
     var body: some View {
         VStack(spacing: 8) {
