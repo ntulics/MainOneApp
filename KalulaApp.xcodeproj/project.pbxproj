@@ -1,0 +1,499 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		01B5533E81E5387345B96FD2 /* QuoteDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2AE71F930195C6F88E263B9 /* QuoteDetailView.swift */; };
+		05F6EA219F79DCB380EC92C0 /* CustomersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8A23ECB534FC1D9C913504 /* CustomersView.swift */; };
+		085672BD58D405B067D6F91E /* QuoteReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 677250E1E15363D98D7FF9C4 /* QuoteReviewView.swift */; };
+		220C4A6D65551D5910F2A9EC /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46CE4240811329AADAEE89AE /* EmptyStateView.swift */; };
+		2C705D123CC0153E552A485C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 854BCAE8F6ABD5B096CBF5D8 /* Assets.xcassets */; };
+		455AA29B2EE42D5E450DD283 /* DocumentScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BF154C8284CCF6DDDF46067 /* DocumentScannerView.swift */; };
+		4CC7982C1ECA81A0E24557B5 /* DocumentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA63C2A1472BCAAE776A94B6 /* DocumentsView.swift */; };
+		574481044F210687E4F5BED2 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FBF2A22B68D21518D22912 /* DashboardView.swift */; };
+		5FF063AF8F2E07921FCFD860 /* Color+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D671110B3F4CB181DFD93265 /* Color+Extensions.swift */; };
+		6499F1211F04146A5E7BF653 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F558A88E54EDA2646ABAAD90 /* Models.swift */; };
+		66B0DE4549955A10EED7F572 /* ReceiptsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B221EC6FA053F2CC157DEF7 /* ReceiptsView.swift */; };
+		68B3EFFED803B15BF9F9F69E /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AE67F43F97DD2A170FEC5AA /* ErrorView.swift */; };
+		7865AD672D36EE26489BDC0F /* QuotesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45AA29F47564EB4DF63315C6 /* QuotesListView.swift */; };
+		7FE860D9CD5A9851C929C42E /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E19DA6F0C6B1A9B2F6AE87E /* OCRService.swift */; };
+		8301DE3BD6E529BBA4128E7C /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3BBB27780367C4F93AD87DE /* AuthService.swift */; };
+		88DA4B039D0422F1392FF1EE /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E715347FE3CD94F84E4ECB45 /* ScannerView.swift */; };
+		C8CC954D99D9A47059AB32E3 /* DocumentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 077E49D6497DA3221CB6BF31 /* DocumentService.swift */; };
+		D315594C9A3E3C85D90A1CB7 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 146BCF6CF5613E6DBC808149 /* APIService.swift */; };
+		EA661F549A9F07C3DCFC50F5 /* FABButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDAE255C015AB2C8D29BD9C /* FABButton.swift */; };
+		EC15BE59B2A518E55D0557C3 /* KalulaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B56498E00FEC0994915EA254 /* KalulaApp.swift */; };
+		F8300B54D3F5A07ACD322ABF /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B72EEAA4F7F49F37D3D4F05 /* LoginView.swift */; };
+		F9C90226FDAF97AF49768B29 /* InvoicesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F42F111362BAE4F8DCCE73D /* InvoicesListView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		077E49D6497DA3221CB6BF31 /* DocumentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentService.swift; sourceTree = "<group>"; };
+		146BCF6CF5613E6DBC808149 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
+		2F42F111362BAE4F8DCCE73D /* InvoicesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvoicesListView.swift; sourceTree = "<group>"; };
+		3B72EEAA4F7F49F37D3D4F05 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		45AA29F47564EB4DF63315C6 /* QuotesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotesListView.swift; sourceTree = "<group>"; };
+		46CE4240811329AADAEE89AE /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		53FBF2A22B68D21518D22912 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		5B221EC6FA053F2CC157DEF7 /* ReceiptsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptsView.swift; sourceTree = "<group>"; };
+		5BF154C8284CCF6DDDF46067 /* DocumentScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentScannerView.swift; sourceTree = "<group>"; };
+		677250E1E15363D98D7FF9C4 /* QuoteReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteReviewView.swift; sourceTree = "<group>"; };
+		7AE67F43F97DD2A170FEC5AA /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
+		7E19DA6F0C6B1A9B2F6AE87E /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
+		854BCAE8F6ABD5B096CBF5D8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		8C201B50EE7EFE7204333965 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		AAFD586114553B65FDC979FE /* KalulaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KalulaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B56498E00FEC0994915EA254 /* KalulaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KalulaApp.swift; sourceTree = "<group>"; };
+		CCDAE255C015AB2C8D29BD9C /* FABButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FABButton.swift; sourceTree = "<group>"; };
+		CF8A23ECB534FC1D9C913504 /* CustomersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomersView.swift; sourceTree = "<group>"; };
+		D671110B3F4CB181DFD93265 /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
+		E3BBB27780367C4F93AD87DE /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
+		E715347FE3CD94F84E4ECB45 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
+		EA63C2A1472BCAAE776A94B6 /* DocumentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsView.swift; sourceTree = "<group>"; };
+		F2AE71F930195C6F88E263B9 /* QuoteDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteDetailView.swift; sourceTree = "<group>"; };
+		F558A88E54EDA2646ABAAD90 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		285733FBCBE5488F75817537 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				F558A88E54EDA2646ABAAD90 /* Models.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		3E42D322C679816A43F7F931 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B56498E00FEC0994915EA254 /* KalulaApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		7222262F016411A0E0E95C61 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AAFD586114553B65FDC979FE /* KalulaApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7A42DCEA91E5158ED403C268 /* Scanner */ = {
+			isa = PBXGroup;
+			children = (
+				5BF154C8284CCF6DDDF46067 /* DocumentScannerView.swift */,
+				677250E1E15363D98D7FF9C4 /* QuoteReviewView.swift */,
+				E715347FE3CD94F84E4ECB45 /* ScannerView.swift */,
+			);
+			path = Scanner;
+			sourceTree = "<group>";
+		};
+		847211EE0698FA239B4937BE /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				146BCF6CF5613E6DBC808149 /* APIService.swift */,
+				E3BBB27780367C4F93AD87DE /* AuthService.swift */,
+				077E49D6497DA3221CB6BF31 /* DocumentService.swift */,
+				7E19DA6F0C6B1A9B2F6AE87E /* OCRService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		909DFFBD8733FCB65C0B2FAA /* Customers */ = {
+			isa = PBXGroup;
+			children = (
+				CF8A23ECB534FC1D9C913504 /* CustomersView.swift */,
+			);
+			path = Customers;
+			sourceTree = "<group>";
+		};
+		953CB2B561D8A2B90B4B5216 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				53FBF2A22B68D21518D22912 /* DashboardView.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		9EB6FA57005B4007FC7144B6 /* Quotes */ = {
+			isa = PBXGroup;
+			children = (
+				F2AE71F930195C6F88E263B9 /* QuoteDetailView.swift */,
+				45AA29F47564EB4DF63315C6 /* QuotesListView.swift */,
+			);
+			path = Quotes;
+			sourceTree = "<group>";
+		};
+		A4A1A0DA3F92412EE9E8F622 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				C06A8D5E8A56A9A7CFD1464B /* Auth */,
+				909DFFBD8733FCB65C0B2FAA /* Customers */,
+				953CB2B561D8A2B90B4B5216 /* Dashboard */,
+				EAB6E76B8605FB50D6E841A5 /* Documents */,
+				A5F6535C0BAACA5F0D0E477C /* Invoices */,
+				9EB6FA57005B4007FC7144B6 /* Quotes */,
+				E94A1B6C7F07338087AFB440 /* Receipts */,
+				7A42DCEA91E5158ED403C268 /* Scanner */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		A5F6535C0BAACA5F0D0E477C /* Invoices */ = {
+			isa = PBXGroup;
+			children = (
+				2F42F111362BAE4F8DCCE73D /* InvoicesListView.swift */,
+			);
+			path = Invoices;
+			sourceTree = "<group>";
+		};
+		C06A8D5E8A56A9A7CFD1464B /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				3B72EEAA4F7F49F37D3D4F05 /* LoginView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		C1C53E0E5C217E6C32D1E300 /* KalulaApp */ = {
+			isa = PBXGroup;
+			children = (
+				854BCAE8F6ABD5B096CBF5D8 /* Assets.xcassets */,
+				8C201B50EE7EFE7204333965 /* Info.plist */,
+				3E42D322C679816A43F7F931 /* App */,
+				E52C8BEE3F2A6B54FF689C42 /* Common */,
+				A4A1A0DA3F92412EE9E8F622 /* Features */,
+				285733FBCBE5488F75817537 /* Models */,
+				847211EE0698FA239B4937BE /* Services */,
+			);
+			path = KalulaApp;
+			sourceTree = "<group>";
+		};
+		CBD6AEC87530A00063C3EF4C /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				D671110B3F4CB181DFD93265 /* Color+Extensions.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		E52C8BEE3F2A6B54FF689C42 /* Common */ = {
+			isa = PBXGroup;
+			children = (
+				46CE4240811329AADAEE89AE /* EmptyStateView.swift */,
+				7AE67F43F97DD2A170FEC5AA /* ErrorView.swift */,
+				CCDAE255C015AB2C8D29BD9C /* FABButton.swift */,
+				CBD6AEC87530A00063C3EF4C /* Extensions */,
+			);
+			path = Common;
+			sourceTree = "<group>";
+		};
+		E7C36F81179966D83AEFD855 = {
+			isa = PBXGroup;
+			children = (
+				C1C53E0E5C217E6C32D1E300 /* KalulaApp */,
+				7222262F016411A0E0E95C61 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E94A1B6C7F07338087AFB440 /* Receipts */ = {
+			isa = PBXGroup;
+			children = (
+				5B221EC6FA053F2CC157DEF7 /* ReceiptsView.swift */,
+			);
+			path = Receipts;
+			sourceTree = "<group>";
+		};
+		EAB6E76B8605FB50D6E841A5 /* Documents */ = {
+			isa = PBXGroup;
+			children = (
+				EA63C2A1472BCAAE776A94B6 /* DocumentsView.swift */,
+			);
+			path = Documents;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		18BF5826066F6D9BA0E4367D /* KalulaApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 58656DB2799A6BCD4E07FB2B /* Build configuration list for PBXNativeTarget "KalulaApp" */;
+			buildPhases = (
+				7B441C3BF13FAB41AB846D66 /* Sources */,
+				FB3F5C43B9F2C948A207C400 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KalulaApp;
+			packageProductDependencies = (
+			);
+			productName = KalulaApp;
+			productReference = AAFD586114553B65FDC979FE /* KalulaApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F5C6E4A05DB2217C23CD44E2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = D9FF4BB08451110C2612EAC8 /* Build configuration list for PBXProject "KalulaApp" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = E7C36F81179966D83AEFD855;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 7222262F016411A0E0E95C61 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				18BF5826066F6D9BA0E4367D /* KalulaApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FB3F5C43B9F2C948A207C400 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2C705D123CC0153E552A485C /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7B441C3BF13FAB41AB846D66 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D315594C9A3E3C85D90A1CB7 /* APIService.swift in Sources */,
+				8301DE3BD6E529BBA4128E7C /* AuthService.swift in Sources */,
+				5FF063AF8F2E07921FCFD860 /* Color+Extensions.swift in Sources */,
+				05F6EA219F79DCB380EC92C0 /* CustomersView.swift in Sources */,
+				574481044F210687E4F5BED2 /* DashboardView.swift in Sources */,
+				455AA29B2EE42D5E450DD283 /* DocumentScannerView.swift in Sources */,
+				C8CC954D99D9A47059AB32E3 /* DocumentService.swift in Sources */,
+				4CC7982C1ECA81A0E24557B5 /* DocumentsView.swift in Sources */,
+				220C4A6D65551D5910F2A9EC /* EmptyStateView.swift in Sources */,
+				68B3EFFED803B15BF9F9F69E /* ErrorView.swift in Sources */,
+				EA661F549A9F07C3DCFC50F5 /* FABButton.swift in Sources */,
+				F9C90226FDAF97AF49768B29 /* InvoicesListView.swift in Sources */,
+				EC15BE59B2A518E55D0557C3 /* KalulaApp.swift in Sources */,
+				F8300B54D3F5A07ACD322ABF /* LoginView.swift in Sources */,
+				6499F1211F04146A5E7BF653 /* Models.swift in Sources */,
+				7FE860D9CD5A9851C929C42E /* OCRService.swift in Sources */,
+				01B5533E81E5387345B96FD2 /* QuoteDetailView.swift in Sources */,
+				085672BD58D405B067D6F91E /* QuoteReviewView.swift in Sources */,
+				7865AD672D36EE26489BDC0F /* QuotesListView.swift in Sources */,
+				66B0DE4549955A10EED7F572 /* ReceiptsView.swift in Sources */,
+				88DA4B039D0422F1392FF1EE /* ScannerView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5787ED9F9B01E29637FEC198 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		89842D8E4111C4DBA2A3070E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		B55D4F124F4302517A4B07ED /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PR7DR54HF3;
+				INFOPLIST_FILE = KalulaApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kalula.app;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E32E7F932B801F48C1C4B0A0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PR7DR54HF3;
+				INFOPLIST_FILE = KalulaApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kalula.app;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		58656DB2799A6BCD4E07FB2B /* Build configuration list for PBXNativeTarget "KalulaApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B55D4F124F4302517A4B07ED /* Debug */,
+				E32E7F932B801F48C1C4B0A0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D9FF4BB08451110C2612EAC8 /* Build configuration list for PBXProject "KalulaApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				89842D8E4111C4DBA2A3070E /* Debug */,
+				5787ED9F9B01E29637FEC198 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F5C6E4A05DB2217C23CD44E2 /* Project object */;
+}

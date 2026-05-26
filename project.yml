@@ -1,0 +1,42 @@
+name: KalulaApp
+options:
+  bundleIdPrefix: com.kalula
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "15"
+  createIntermediateGroups: true
+
+settings:
+  SWIFT_VERSION: "5.9"
+  ENABLE_PREVIEWS: YES
+
+targets:
+  KalulaApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: KalulaApp
+    info:
+      path: KalulaApp/Info.plist
+      properties:
+        NSCameraUsageDescription: "Kalula uses your camera to scan documents, vendor quotes, and receipts."
+        NSPhotoLibraryUsageDescription: "Kalula can import scanned documents from your photo library."
+        UIRequiresFullScreen: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UILaunchScreen: {}
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.kalula.app
+      MARKETING_VERSION: "1.0.0"
+      CURRENT_PROJECT_VERSION: "1"
+      TARGETED_DEVICE_FAMILY: "1,2"
+      SWIFT_VERSION: "5.9"
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+      INFOPLIST_FILE: KalulaApp/Info.plist
