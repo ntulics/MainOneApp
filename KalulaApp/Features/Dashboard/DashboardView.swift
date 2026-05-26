@@ -236,23 +236,24 @@ struct DashboardView: View {
         let data   = vm.monthlyData
         let maxVal = max(data.map(\.value).max() ?? 0, 1)
 
-        return HStack(alignment: .bottom, spacing: 3) {
+        return HStack(alignment: .bottom, spacing: 4) {
             ForEach(Array(data.enumerated()), id: \.offset) { idx, item in
                 let isLast = idx == data.count - 1
                 let pct    = CGFloat(item.value / maxVal)
-                let barH   = max(3, pct * 48)
+                let barH   = max(4, pct * 48)
                 VStack(spacing: 4) {
                     Capsule()
-                        .fill(isLast ? Color.orange : Color.white.opacity(0.2))
-                        .frame(width: 8, height: barH)
+                        .fill(isLast ? Color.orange : Color.white.opacity(0.25))
+                        .frame(width: 10, height: barH)
                     Text(item.label)
-                        .font(.system(size: 7, weight: isLast ? .bold : .regular))
-                        .foregroundStyle(isLast ? Color.orange : Color.white.opacity(0.35))
+                        .font(.system(size: 8, weight: isLast ? .bold : .regular))
+                        .foregroundStyle(isLast ? Color.orange : Color.white.opacity(0.6))
+                        .fixedSize()
                 }
+                .frame(maxWidth: .infinity)
             }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 72)
+        .frame(height: 68, alignment: .bottom)
         .animation(.easeOut(duration: 0.5), value: vm.invoices.count)
     }
 
