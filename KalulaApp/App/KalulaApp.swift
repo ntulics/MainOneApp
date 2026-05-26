@@ -187,8 +187,9 @@ struct MenuSection<Content: View>: View {
 // MARK: - Preferences view
 
 struct PreferencesView: View {
-    @State private var quoteFormat   = DocumentNumberFormat(prefix: "QUO", separator: "", dateFormat: "YYMM", seqDigits: 3)
-    @State private var invoiceFormat = DocumentNumberFormat(prefix: "INV", separator: "", dateFormat: "YYMM", seqDigits: 3)
+    @State private var quoteFormat        = DocumentNumberFormat(prefix: "QUO", separator: "", dateFormat: "YYMM", seqDigits: 3)
+    @State private var invoiceFormat      = DocumentNumberFormat(prefix: "INV", separator: "", dateFormat: "YYMM", seqDigits: 3)
+    @State private var fiscalYearEndMonth = 12   // preserve when saving numbering
     @State private var isLoading = true
     @State private var saving    = false
     @State private var saved     = false
@@ -240,6 +241,7 @@ struct PreferencesView: View {
         if let s: CompanySettings = try? await APIService.shared.get("/settings/company") {
             if let qf  = s.settings?.quoteNumberFormat   { quoteFormat   = qf }
             if let inf = s.settings?.invoiceNumberFormat { invoiceFormat = inf }
+            fiscalYearEndMonth = s.settings?.fiscalYearEndMonth ?? 12
         }
         isLoading = false
     }
@@ -250,10 +252,10 @@ struct PreferencesView: View {
             let body = UpdateCompanySettings(
                 name: nil, contactEmail: nil, contactPhone: nil,
                 address: nil, taxRate: nil, currency: nil,
-                fiscalYearEndMonth: nil,
                 settings: CompanyDocumentSettings(
                     quoteNumberFormat:   quoteFormat,
-                    invoiceNumberFormat: invoiceFormat
+                    invoiceNumberFormat: invoiceFormat,
+                    fiscalYearEndMonth:  fiscalYearEndMonth
                 )
             )
             let _: CompanySettings = try await APIService.shared.patch("/settings/company", body: body)
@@ -455,14 +457,14 @@ struct TenantSettingsView: View {
     private func load() async {
         isLoading = true
         if let s: CompanySettings = try? await APIService.shared.get("/settings/company") {
-            settings          = s
-            name              = s.name         ?? ""
-            email             = s.contactEmail ?? ""
-            phone             = s.contactPhone ?? ""
-            address           = s.address      ?? ""
-            taxRate           = s.taxRate.map { String(format: "%.0f", $0) } ?? "15"
-            currency          = s.currency     ?? "ZAR"
-            fiscalYearEndMonth = s.fiscalYearEndMonth ?? 12
+            settings           = s
+            name               = s.name         ?? ""
+            email              = s.contactEmail ?? ""
+            phone              = s.contactPhone ?? ""
+            address            = s.address      ?? ""
+            taxRate            = s.taxRate.map { String(format: "%.0f", $0) } ?? "15"
+            currency           = s.currency     ?? "ZAR"
+            fiscalYearEndMonth = s.settings?.fiscalYearEndMonth ?? 12
         }
         isLoading = false
     }
@@ -471,14 +473,17 @@ struct TenantSettingsView: View {
         saving = true; error = ""; saved = false
         do {
             let body = UpdateCompanySettings(
-                name:               name.isEmpty    ? nil : name.trimmingCharacters(in: .whitespaces),
-                contactEmail:       email.isEmpty   ? nil : email,
-                contactPhone:       phone.isEmpty   ? nil : phone,
-                address:            address.isEmpty ? nil : address.trimmingCharacters(in: .whitespaces),
-                taxRate:            Double(taxRate) ?? 15,
-                currency:           currency,
-                fiscalYearEndMonth: fiscalYearEndMonth,
-                settings:           nil
+                name:         name.isEmpty    ? nil : name.trimmingCharacters(in: .whitespaces),
+                contactEmail: email.isEmpty   ? nil : email,
+                contactPhone: phone.isEmpty   ? nil : phone,
+                address:      address.isEmpty ? nil : address.trimmingCharacters(in: .whitespaces),
+                taxRate:      Double(taxRate) ?? 15,
+                currency:     currency,
+                settings:     CompanyDocumentSettings(
+                    quoteNumberFormat:   nil,
+                    invoiceNumberFormat: nil,
+                    fiscalYearEndMonth:  fiscalYearEndMonth
+                )
             )
             let _: CompanySettings = try await APIService.shared.patch("/settings/company", body: body)
             saved = true

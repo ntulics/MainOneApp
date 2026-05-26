@@ -319,29 +319,28 @@ struct DocumentNumberFormat: Codable {
 struct CompanyDocumentSettings: Codable {
     let quoteNumberFormat:   DocumentNumberFormat?
     let invoiceNumberFormat: DocumentNumberFormat?
+    let fiscalYearEndMonth:  Int?
 }
 
 struct CompanySettings: Codable {
-    let name:               String?
-    let contactEmail:       String?
-    let contactPhone:       String?
-    let address:            String?
-    let logoBase64:         String?
-    let taxRate:            Double?
-    let currency:           String?
-    let fiscalYearEndMonth: Int?
-    let settings:           CompanyDocumentSettings?
+    let name:         String?
+    let contactEmail: String?
+    let contactPhone: String?
+    let address:      String?
+    let logoBase64:   String?
+    let taxRate:      Double?
+    let currency:     String?
+    let settings:     CompanyDocumentSettings?
 }
 
 struct UpdateCompanySettings: Encodable {
-    let name:               String?
-    let contactEmail:       String?
-    let contactPhone:       String?
-    let address:            String?
-    let taxRate:            Double?
-    let currency:           String?
-    let fiscalYearEndMonth: Int?
-    let settings:           CompanyDocumentSettings?
+    let name:         String?
+    let contactEmail: String?
+    let contactPhone: String?
+    let address:      String?
+    let taxRate:      Double?
+    let currency:     String?
+    let settings:     CompanyDocumentSettings?
 }
 
 struct UpdateInvoiceRequest: Encodable {

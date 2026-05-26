@@ -91,7 +91,7 @@ final class DashboardViewModel: ObservableObject {
         let (i, q, s) = await (invTask, qtTask, settingsTask)
         invoices  = i
         quotes    = q
-        if let endMonth = s?.fiscalYearEndMonth { fiscalYearEndMonth = endMonth }
+        if let endMonth = s?.settings?.fiscalYearEndMonth { fiscalYearEndMonth = endMonth }
         isLoading = false
     }
 
