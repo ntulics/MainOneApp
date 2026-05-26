@@ -292,175 +292,143 @@ struct DashboardView: View {
         .animation(.easeOut(duration: 0.5), value: vm.invoices.count)
     }
 
-    // MARK: - Financial Overview Infographic
+    // MARK: - Financial Overview Donut Chart
 
     private var profitLossChart: some View {
-        let revenue     = vm.revenue
-        let expenses    = vm.expenses
-        let profit      = max(revenue - expenses, 0)
-        let outstanding = vm.outstanding
+        let rev = vm.revenue
+        let exp = vm.expenses
+        let out = vm.outstanding
+        let total = rev + exp + out
+        let hasSeg = total > 0
 
-        let lGrad: [Color] = [Color(red: 0, green: 0.78, blue: 1), Color(red: 0, green: 0.34, blue: 1)]
-        let rGrad: [Color] = [Color(red: 0.49, green: 0.23, blue: 0.93), Color(red: 0.76, green: 0.50, blue: 0.98)]
+        let purple = Color(red: 0.49, green: 0.23, blue: 0.93)
+        let pink   = Color(red: 0.91, green: 0.12, blue: 0.55)
+        let orange = Color(red: 0.98, green: 0.45, blue: 0.09)
+
+        let colors:  [Color]  = [purple, pink, orange]
+        let labels:  [String] = ["Revenue", "Expenses", "Outstanding"]
+        let descs:   [String] = ["from paid invoices", "total outgoing spend", "pending invoices"]
+        let values:  [Double] = [rev, exp, out]
+
+        // Fractions and trim ranges (3° gap between segments)
+        let gapF: Double = 3.0 / 360.0
+        let availF: Double = hasSeg ? 1.0 - gapF * 3 : 1.0
+        let rawFracs: [Double] = hasSeg
+            ? [rev / total, exp / total, out / total]
+            : [1.0 / 3, 1.0 / 3, 1.0 / 3]
+        let spanFracs = rawFracs.map { $0 * availF }
+
+        var starts = [Double](repeating: 0, count: 3)
+        var ends   = [Double](repeating: 0, count: 3)
+        var run    = 0.0
+        for i in 0..<3 {
+            starts[i] = run
+            ends[i]   = run + spanFracs[i]
+            run        = ends[i] + (hasSeg ? gapF : 0)
+        }
+
+        // Label positions: donut frame 160×160, circle path at r=60, mid of stroke ring = 60
+        let cx = 80.0, cy = 80.0, mr = 60.0
 
         return VStack(alignment: .leading, spacing: 12) {
             Text("Financial Overview")
                 .font(.headline)
                 .padding(.horizontal, 20)
 
-            HStack(alignment: .center, spacing: 0) {
+            HStack(alignment: .center, spacing: 16) {
 
-                // ── Left pills ─────────────────────────────
-                VStack(spacing: 10) {
-                    infoPill(num: "1", label: "Revenue",  value: revenue,
-                             sub: "paid invoices", gradient: lGrad, numOnRight: true)
-                    infoPill(num: "2", label: "Expenses", value: expenses,
-                             sub: "total spend",   gradient: lGrad, numOnRight: true)
-                }
-                .frame(maxWidth: .infinity)
-
-                // ── Left connectors ────────────────────────
-                VStack(spacing: 10) {
-                    infoConnector
-                    infoConnector
-                }
-                .frame(width: 20)
-
-                // ── Centre circle ──────────────────────────
+                // ── Donut ──────────────────────────────────
                 ZStack {
-                    Circle()
-                        .stroke(
-                            AngularGradient(
-                                colors: [.cyan, .blue, .indigo, .purple,
-                                         Color(red: 0.76, green: 0.31, blue: 0.87), .cyan],
-                                center: .center,
-                                startAngle: .degrees(-45),
-                                endAngle: .degrees(315)
-                            ),
-                            lineWidth: 7
-                        )
+                    // Segments
+                    ForEach(0..<3, id: \.self) { i in
+                        Circle()
+                            .trim(from: starts[i], to: max(ends[i], starts[i] + 0.001))
+                            .stroke(colors[i], style: StrokeStyle(lineWidth: 40, lineCap: .butt))
+                            .rotationEffect(.degrees(-90))
+                            .padding(20)
+                    }
+
+                    // Centre hole
                     Circle()
                         .fill(Color(.secondarySystemGroupedBackground))
-                        .padding(7)
+                        .padding(40)
+
+                    // Centre labels
                     VStack(spacing: 2) {
                         Text("FINANCIAL")
                             .font(.system(size: 7.5, weight: .black))
-                            .foregroundStyle(.primary)
-                            .tracking(0.4)
-                        Text("OVERVIEW")
-                            .font(.system(size: 6, weight: .regular))
-                            .foregroundStyle(.secondary)
-                            .tracking(1)
-                        HStack(spacing: 2.5) {
-                            ForEach([Color.cyan, .blue, .indigo, .purple,
-                                     Color(red: 0.76, green: 0.31, blue: 0.87)], id: \.self) { c in
-                                RoundedRectangle(cornerRadius: 1)
-                                    .fill(c)
-                                    .frame(width: 5.5, height: 5.5)
-                            }
+                            .foregroundStyle(purple)
+                            .tracking(0.5)
+                        HStack(spacing: 3) {
+                            Circle().fill(purple).frame(width: 4.5, height: 4.5)
+                            Circle().fill(pink).frame(width: 4.5, height: 4.5)
+                            Circle().fill(orange).frame(width: 4.5, height: 4.5)
                         }
-                        .padding(.top, 3)
+                        Text(fmtShort(rev))
+                            .font(.system(size: 13, weight: .black, design: .rounded))
+                            .foregroundStyle(.primary)
+                            .minimumScaleFactor(0.6)
+                            .lineLimit(1)
+                        Text("revenue")
+                            .font(.system(size: 6.5))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    // Segment labels
+                    ForEach(0..<3, id: \.self) { i in
+                        let pct      = hasSeg ? Int(round(rawFracs[i] * 100)) : 33
+                        let midAngle = (starts[i] + ends[i]) / 2 * 2 * .pi - .pi / 2
+                        let lx       = cx + mr * cos(midAngle)
+                        let ly       = cy + mr * sin(midAngle)
+                        if spanFracs[i] > 0.08 {
+                            VStack(spacing: 1) {
+                                Text(labels[i].uppercased())
+                                    .font(.system(size: 5.5, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .tracking(0.3)
+                                Text("\(pct)%")
+                                    .font(.system(size: 11, weight: .black))
+                                    .foregroundStyle(.white)
+                            }
+                            .position(x: lx, y: ly)
+                        }
                     }
                 }
-                .frame(width: 92, height: 92)
+                .frame(width: 160, height: 160)
 
-                // ── Right connectors ───────────────────────
-                VStack(spacing: 10) {
-                    infoConnector
-                    infoConnector
+                // ── Legend ─────────────────────────────────
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(0..<3, id: \.self) { i in
+                        HStack(alignment: .top, spacing: 8) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(colors[i])
+                                .frame(width: 5, height: 48)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(labels[i])
+                                    .font(.system(size: 10.5, weight: .bold))
+                                    .foregroundStyle(.primary)
+                                Text(fmtShort(values[i]))
+                                    .font(.system(size: 15, weight: .black, design: .rounded))
+                                    .foregroundStyle(.primary)
+                                    .minimumScaleFactor(0.65)
+                                    .lineLimit(1)
+                                Text(descs[i])
+                                    .font(.system(size: 8.5))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
                 }
-                .frame(width: 20)
-
-                // ── Right pills ────────────────────────────
-                VStack(spacing: 10) {
-                    infoPill(num: "3", label: "Profit",      value: profit,
-                             sub: "after costs", gradient: rGrad, numOnRight: false)
-                    infoPill(num: "4", label: "Outstanding", value: outstanding,
-                             sub: "pending",     gradient: rGrad, numOnRight: false)
-                }
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 12)
             .padding(.vertical, 16)
             .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
             .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
             .padding(.horizontal, 16)
         }
-    }
-
-    private var infoConnector: some View {
-        HStack(spacing: 0) {
-            Circle().fill(Color(.label)).frame(width: 5, height: 5)
-            Rectangle().fill(Color(.label).opacity(0.45)).frame(height: 1.5)
-            Circle().fill(Color(.label)).frame(width: 5, height: 5)
-        }
-    }
-
-    private func infoPill(
-        num: String,
-        label: String,
-        value: Double,
-        sub: String,
-        gradient: [Color],
-        numOnRight: Bool
-    ) -> some View {
-        HStack(spacing: 5) {
-            if !numOnRight {
-                numBadgeView(num)
-            } else {
-                Image(systemName: num == "1" ? "arrow.up.right" : "arrow.down.left")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 22, height: 22)
-                    .background(.white.opacity(0.18), in: Circle())
-            }
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(label.uppercased())
-                    .font(.system(size: 6.5, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .tracking(0.5)
-                    .lineLimit(1)
-                Text(fmtShort(value))
-                    .font(.system(size: 12, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
-                    .minimumScaleFactor(0.55)
-                    .lineLimit(1)
-                Text(sub)
-                    .font(.system(size: 6.5))
-                    .foregroundStyle(.white.opacity(0.55))
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            if numOnRight {
-                numBadgeView(num)
-            } else {
-                Image(systemName: num == "3" ? "dollarsign" : "clock")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 22, height: 22)
-                    .background(.white.opacity(0.18), in: Circle())
-            }
-        }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 10)
-        .background(
-            LinearGradient(colors: gradient, startPoint: .leading, endPoint: .trailing)
-        )
-        .clipShape(Capsule())
-        .shadow(color: gradient[0].opacity(0.28), radius: 5, y: 3)
-    }
-
-    private func numBadgeView(_ num: String) -> some View {
-        ZStack {
-            Circle().fill(.white.opacity(0.22))
-            Circle().strokeBorder(.white.opacity(0.4), lineWidth: 1.5)
-            Text(num)
-                .font(.system(size: 13, weight: .black, design: .rounded))
-                .foregroundStyle(.white)
-        }
-        .frame(width: 28, height: 28)
     }
 
     private func fmtShort(_ v: Double) -> String {
