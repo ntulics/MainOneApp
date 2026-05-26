@@ -2,10 +2,6 @@ import SwiftUI
 
 // MARK: - View Model
 
-private struct ReceiptItem: Decodable {
-    let total: Double?
-}
-
 @MainActor
 final class DashboardViewModel: ObservableObject {
     @Published var invoices: [Invoice] = []
@@ -43,7 +39,6 @@ final class DashboardViewModel: ObservableObject {
     var recentInvoices: [Invoice] { Array(invoices.prefix(6)) }
 
     @Published var fiscalYearEndMonth: Int = 12
-    @Published var expenses: Double = 0
 
     var monthlyData: [(label: String, value: Double, isCurrent: Bool)] {
         let cal = Calendar.current
@@ -94,11 +89,9 @@ final class DashboardViewModel: ObservableObject {
         async let invTask:      [Invoice]          = (try? await APIService.shared.get("/invoices"))        ?? []
         async let qtTask:       [Quote]            = (try? await APIService.shared.get("/quotes"))          ?? []
         async let settingsTask: CompanySettings?   = try? await APIService.shared.get("/settings/company")
-        async let receiptsTask: [ReceiptItem]      = (try? await APIService.shared.get("/receipts"))       ?? []
-        let (i, q, s, r) = await (invTask, qtTask, settingsTask, receiptsTask)
+        let (i, q, s) = await (invTask, qtTask, settingsTask)
         invoices  = i
         quotes    = q
-        expenses  = r.reduce(0) { $0 + ($1.total ?? 0) }
         if let endMonth = s?.settings?.fiscalYearEndMonth { fiscalYearEndMonth = endMonth }
         isLoading = false
     }
@@ -130,7 +123,7 @@ struct DashboardView: View {
                 metricsGrid
                     .padding(.horizontal, 16)
 
-                financialRingsCard
+                invoiceStatusChart
 
                 recentTransactions
             }
@@ -294,20 +287,75 @@ struct DashboardView: View {
         .animation(.easeOut(duration: 0.5), value: vm.invoices.count)
     }
 
-    // MARK: - Financial rings card
+    // MARK: - Invoice status chart
 
-    private var financialRingsCard: some View {
-        let profit = max(0, vm.revenue - vm.expenses)
-        let ref    = max(vm.revenue, 1)
+    private var invoiceStatusChart: some View {
+        let items: [(label: String, value: Double, color: Color)] = [
+            ("Paid",        vm.revenue,     .green),
+            ("Outstanding", vm.outstanding, Color(red: 0, green: 0.478, blue: 1)),
+            ("Overdue",     vm.overdue,     Color(red: 1, green: 0.231, blue: 0.188)),
+            ("Draft",       vm.draft,       Color(.systemGray3)),
+        ].filter { $0.value > 0 }
+
+        let total = items.map(\.value).reduce(0, +)
+        let safe  = max(total, 1)
+        let slices: [(label: String, value: Double, color: Color, start: CGFloat, end: CGFloat)] = {
+            var result: [(label: String, value: Double, color: Color, start: CGFloat, end: CGFloat)] = []
+            var cursor: CGFloat = 0
+            for item in items {
+                let end = cursor + CGFloat(item.value / safe)
+                result.append((item.label, item.value, item.color, cursor, end))
+                cursor = end
+            }
+            return result
+        }()
+
         return VStack(alignment: .leading, spacing: 12) {
-            Text("Financial Profile")
+            Text("Invoice Overview")
                 .font(.headline)
                 .padding(.horizontal, 20)
 
-            HStack(spacing: 12) {
-                FinancialRingView(label: "Revenue",  value: vm.revenue,  pct: 1.0,                         color: .green)
-                FinancialRingView(label: "Expenses", value: vm.expenses, pct: min(vm.expenses / ref, 1.0), color: Color(red: 1, green: 0.231, blue: 0.188))
-                FinancialRingView(label: "Profit",   value: profit,      pct: max(0, profit / ref),        color: Color(red: 0, green: 0.478, blue: 1))
+            HStack(alignment: .center, spacing: 20) {
+                ZStack {
+                    if slices.isEmpty {
+                        Circle()
+                            .stroke(Color(.systemFill), lineWidth: 24)
+                    } else {
+                        ForEach(Array(slices.enumerated()), id: \.offset) { _, slice in
+                            Circle()
+                                .trim(from: slice.start, to: slice.end)
+                                .stroke(slice.color, style: StrokeStyle(lineWidth: 24, lineCap: .butt))
+                                .rotationEffect(.degrees(-90))
+                        }
+                    }
+                    VStack(spacing: 2) {
+                        Text("Total")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.secondary)
+                        Text(fmtShort(total))
+                            .font(.system(size: 11, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.primary)
+                    }
+                }
+                .frame(width: 110, height: 110)
+                .animation(.easeOut(duration: 0.6), value: vm.invoices.count)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(slices.enumerated()), id: \.offset) { _, slice in
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(slice.color)
+                                .frame(width: 8, height: 8)
+                            Text(slice.label)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(fmtShort(slice.value))
+                                .font(.caption.bold())
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
@@ -315,6 +363,12 @@ struct DashboardView: View {
             .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
             .padding(.horizontal, 16)
         }
+    }
+
+    private func fmtShort(_ v: Double) -> String {
+        if v >= 1_000_000 { return String(format: "R%.1fM", v / 1_000_000) }
+        if v >= 1_000 { return "R\(Int(v / 1_000))k" }
+        return "R\(Int(v))"
     }
 
     // MARK: - Metrics grid
@@ -563,49 +617,6 @@ struct TransactionRow: View {
         case "CANCELLED": return Color(.systemGray3)
         default:         return Color(.systemGray)
         }
-    }
-}
-
-// MARK: - Financial ring view
-
-struct FinancialRingView: View {
-    let label: String
-    let value: Double
-    let pct:   Double
-    let color: Color
-
-    var body: some View {
-        VStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .stroke(color.opacity(0.12), style: StrokeStyle(lineWidth: 10))
-                Circle()
-                    .trim(from: 0, to: pct)
-                    .stroke(color, style: StrokeStyle(lineWidth: 10, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .animation(.easeOut(duration: 0.8), value: pct)
-                VStack(spacing: 1) {
-                    Text("\(Int(pct * 100))%")
-                        .font(.system(size: 14, weight: .heavy, design: .rounded))
-                        .foregroundStyle(color)
-                    Text(fmtShort(value))
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .frame(width: 72, height: 72)
-            Text(label)
-                .font(.caption.bold())
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func fmtShort(_ v: Double) -> String {
-        if v >= 1_000_000 { return String(format: "R%.1fM", v / 1_000_000) }
-        if v >= 1_000 { return "R\(Int(v / 1_000))k" }
-        return "R\(Int(v))"
     }
 }
 
