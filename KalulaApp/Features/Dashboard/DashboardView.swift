@@ -40,7 +40,7 @@ final class DashboardViewModel: ObservableObject {
 
     @Published var fiscalYearEndMonth: Int = 12
 
-    var monthlyData: [(label: String, value: Double)] {
+    var monthlyData: [(label: String, value: Double, isCurrent: Bool)] {
         let cal = Calendar.current
         let now = Date()
         let df  = DateFormatter()
@@ -77,7 +77,8 @@ final class DashboardViewModel: ObservableObject {
                 }
                 .reduce(0, +)
 
-            return (label, rev)
+            let isCurrent = month == currentMonth && year == currentYear
+            return (label, rev, isCurrent)
         }
     }
 
@@ -121,6 +122,8 @@ struct DashboardView: View {
 
                 metricsGrid
                     .padding(.horizontal, 16)
+
+                financialRingsCard
 
                 recentTransactions
             }
@@ -262,17 +265,19 @@ struct DashboardView: View {
         let maxVal = max(data.map(\.value).max() ?? 0, 1)
 
         return HStack(alignment: .bottom, spacing: 4) {
-            ForEach(Array(data.enumerated()), id: \.offset) { idx, item in
-                let isLast = idx == data.count - 1
-                let pct    = CGFloat(item.value / maxVal)
-                let barH   = max(4, pct * 48)
+            ForEach(Array(data.enumerated()), id: \.offset) { _, item in
+                let isCurrent = item.isCurrent
+                let pct       = CGFloat(item.value / maxVal)
+                let barH      = item.value > 0 ? max(6, pct * 48) : CGFloat(0)
                 VStack(spacing: 4) {
-                    Capsule()
-                        .fill(isLast ? Color.orange : Color.white.opacity(0.25))
-                        .frame(width: 10, height: barH)
+                    if barH > 0 {
+                        Capsule()
+                            .fill(isCurrent ? Color.orange : Color.white.opacity(0.25))
+                            .frame(width: 10, height: barH)
+                    }
                     Text(item.label)
-                        .font(.system(size: 8, weight: isLast ? .bold : .regular))
-                        .foregroundStyle(isLast ? Color.orange : Color.white.opacity(0.6))
+                        .font(.system(size: 8, weight: isCurrent ? .bold : .regular))
+                        .foregroundStyle(isCurrent ? Color.orange : Color.white.opacity(0.6))
                         .fixedSize()
                 }
                 .frame(maxWidth: .infinity)
@@ -280,6 +285,28 @@ struct DashboardView: View {
         }
         .frame(height: 68, alignment: .bottom)
         .animation(.easeOut(duration: 0.5), value: vm.invoices.count)
+    }
+
+    // MARK: - Financial rings card
+
+    private var financialRingsCard: some View {
+        let total = max(vm.revenue + vm.outstanding + vm.overdue, 1)
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Financial Profile")
+                .font(.headline)
+                .padding(.horizontal, 20)
+
+            HStack(spacing: 12) {
+                FinancialRingView(label: "Collected",   value: vm.revenue,      total: total, color: .green)
+                FinancialRingView(label: "Outstanding", value: vm.outstanding,  total: total, color: Color(red: 0, green: 0.478, blue: 1))
+                FinancialRingView(label: "Overdue",     value: vm.overdue,      total: total, color: Color(red: 1, green: 0.231, blue: 0.188))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+            .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
+            .padding(.horizontal, 16)
+        }
     }
 
     // MARK: - Metrics grid
@@ -528,6 +555,51 @@ struct TransactionRow: View {
         case "CANCELLED": return Color(.systemGray3)
         default:         return Color(.systemGray)
         }
+    }
+}
+
+// MARK: - Financial ring view
+
+struct FinancialRingView: View {
+    let label: String
+    let value: Double
+    let total: Double
+    let color: Color
+
+    private var pct: Double { value / max(total, 1) }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .stroke(color.opacity(0.12), style: StrokeStyle(lineWidth: 10))
+                Circle()
+                    .trim(from: 0, to: pct)
+                    .stroke(color, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeOut(duration: 0.8), value: pct)
+                VStack(spacing: 1) {
+                    Text("\(Int(pct * 100))%")
+                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .foregroundStyle(color)
+                    Text(fmtShort(value))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(width: 72, height: 72)
+            Text(label)
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func fmtShort(_ v: Double) -> String {
+        if v >= 1_000_000 { return String(format: "R%.1fM", v / 1_000_000) }
+        if v >= 1_000 { return "R\(Int(v / 1_000))k" }
+        return "R\(Int(v))"
     }
 }
 
