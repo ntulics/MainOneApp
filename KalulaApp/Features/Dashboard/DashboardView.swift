@@ -2,6 +2,8 @@ import SwiftUI
 
 // MARK: - View Model
 
+private struct ReceiptItem: Decodable { let total: Double? }
+
 @MainActor
 final class DashboardViewModel: ObservableObject {
     @Published var invoices: [Invoice] = []
@@ -39,6 +41,7 @@ final class DashboardViewModel: ObservableObject {
     var recentInvoices: [Invoice] { Array(invoices.prefix(6)) }
 
     @Published var fiscalYearEndMonth: Int = 12
+    @Published var expenses: Double = 0
 
     var monthlyData: [(label: String, value: Double, isCurrent: Bool)] {
         let cal = Calendar.current
@@ -89,9 +92,11 @@ final class DashboardViewModel: ObservableObject {
         async let invTask:      [Invoice]          = (try? await APIService.shared.get("/invoices"))        ?? []
         async let qtTask:       [Quote]            = (try? await APIService.shared.get("/quotes"))          ?? []
         async let settingsTask: CompanySettings?   = try? await APIService.shared.get("/settings/company")
-        let (i, q, s) = await (invTask, qtTask, settingsTask)
+        async let receiptsTask: [ReceiptItem]      = (try? await APIService.shared.get("/receipts"))       ?? []
+        let (i, q, s, r) = await (invTask, qtTask, settingsTask, receiptsTask)
         invoices  = i
         quotes    = q
+        expenses  = r.reduce(0) { $0 + ($1.total ?? 0) }
         if let endMonth = s?.settings?.fiscalYearEndMonth { fiscalYearEndMonth = endMonth }
         isLoading = false
     }
@@ -123,7 +128,7 @@ struct DashboardView: View {
                 metricsGrid
                     .padding(.horizontal, 16)
 
-                invoiceStatusChart
+                profitLossChart
 
                 recentTransactions
             }
@@ -287,82 +292,175 @@ struct DashboardView: View {
         .animation(.easeOut(duration: 0.5), value: vm.invoices.count)
     }
 
-    // MARK: - Invoice status chart
+    // MARK: - Financial Overview Infographic
 
-    private var invoiceStatusChart: some View {
-        let items: [(label: String, value: Double, color: Color)] = [
-            ("Paid",        vm.revenue,     .green),
-            ("Outstanding", vm.outstanding, Color(red: 0, green: 0.478, blue: 1)),
-            ("Overdue",     vm.overdue,     Color(red: 1, green: 0.231, blue: 0.188)),
-            ("Draft",       vm.draft,       Color(.systemGray3)),
-        ].filter { $0.value > 0 }
+    private var profitLossChart: some View {
+        let revenue     = vm.revenue
+        let expenses    = vm.expenses
+        let profit      = max(revenue - expenses, 0)
+        let outstanding = vm.outstanding
 
-        let total = items.map(\.value).reduce(0, +)
-        let safe  = max(total, 1)
-        let slices: [(label: String, value: Double, color: Color, start: CGFloat, end: CGFloat)] = {
-            var result: [(label: String, value: Double, color: Color, start: CGFloat, end: CGFloat)] = []
-            var cursor: CGFloat = 0
-            for item in items {
-                let end = cursor + CGFloat(item.value / safe)
-                result.append((item.label, item.value, item.color, cursor, end))
-                cursor = end
-            }
-            return result
-        }()
+        let lGrad: [Color] = [Color(red: 0, green: 0.78, blue: 1), Color(red: 0, green: 0.34, blue: 1)]
+        let rGrad: [Color] = [Color(red: 0.49, green: 0.23, blue: 0.93), Color(red: 0.76, green: 0.50, blue: 0.98)]
 
         return VStack(alignment: .leading, spacing: 12) {
-            Text("Invoice Overview")
+            Text("Financial Overview")
                 .font(.headline)
                 .padding(.horizontal, 20)
 
-            HStack(alignment: .center, spacing: 20) {
-                ZStack {
-                    if slices.isEmpty {
-                        Circle()
-                            .stroke(Color(.systemFill), lineWidth: 24)
-                    } else {
-                        ForEach(Array(slices.enumerated()), id: \.offset) { _, slice in
-                            Circle()
-                                .trim(from: slice.start, to: slice.end)
-                                .stroke(slice.color, style: StrokeStyle(lineWidth: 24, lineCap: .butt))
-                                .rotationEffect(.degrees(-90))
-                        }
-                    }
-                    VStack(spacing: 2) {
-                        Text("Total")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(.secondary)
-                        Text(fmtShort(total))
-                            .font(.system(size: 11, weight: .heavy, design: .rounded))
-                            .foregroundStyle(.primary)
-                    }
-                }
-                .frame(width: 110, height: 110)
-                .animation(.easeOut(duration: 0.6), value: vm.invoices.count)
+            HStack(alignment: .center, spacing: 0) {
 
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(Array(slices.enumerated()), id: \.offset) { _, slice in
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(slice.color)
-                                .frame(width: 8, height: 8)
-                            Text(slice.label)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text(fmtShort(slice.value))
-                                .font(.caption.bold())
-                                .foregroundStyle(.primary)
+                // ── Left pills ─────────────────────────────
+                VStack(spacing: 10) {
+                    infoPill(num: "1", label: "Revenue",  value: revenue,
+                             sub: "paid invoices", gradient: lGrad, numOnRight: true)
+                    infoPill(num: "2", label: "Expenses", value: expenses,
+                             sub: "total spend",   gradient: lGrad, numOnRight: true)
+                }
+                .frame(maxWidth: .infinity)
+
+                // ── Left connectors ────────────────────────
+                VStack(spacing: 10) {
+                    infoConnector
+                    infoConnector
+                }
+                .frame(width: 20)
+
+                // ── Centre circle ──────────────────────────
+                ZStack {
+                    Circle()
+                        .stroke(
+                            AngularGradient(
+                                colors: [.cyan, .blue, .indigo, .purple,
+                                         Color(red: 0.76, green: 0.31, blue: 0.87), .cyan],
+                                center: .center,
+                                startAngle: .degrees(-45),
+                                endAngle: .degrees(315)
+                            ),
+                            lineWidth: 7
+                        )
+                    Circle()
+                        .fill(Color(.secondarySystemGroupedBackground))
+                        .padding(7)
+                    VStack(spacing: 2) {
+                        Text("FINANCIAL")
+                            .font(.system(size: 7.5, weight: .black))
+                            .foregroundStyle(.primary)
+                            .tracking(0.4)
+                        Text("OVERVIEW")
+                            .font(.system(size: 6, weight: .regular))
+                            .foregroundStyle(.secondary)
+                            .tracking(1)
+                        HStack(spacing: 2.5) {
+                            ForEach([Color.cyan, .blue, .indigo, .purple,
+                                     Color(red: 0.76, green: 0.31, blue: 0.87)], id: \.self) { c in
+                                RoundedRectangle(cornerRadius: 1)
+                                    .fill(c)
+                                    .frame(width: 5.5, height: 5.5)
+                            }
                         }
+                        .padding(.top, 3)
                     }
                 }
+                .frame(width: 92, height: 92)
+
+                // ── Right connectors ───────────────────────
+                VStack(spacing: 10) {
+                    infoConnector
+                    infoConnector
+                }
+                .frame(width: 20)
+
+                // ── Right pills ────────────────────────────
+                VStack(spacing: 10) {
+                    infoPill(num: "3", label: "Profit",      value: profit,
+                             sub: "after costs", gradient: rGrad, numOnRight: false)
+                    infoPill(num: "4", label: "Outstanding", value: outstanding,
+                             sub: "pending",     gradient: rGrad, numOnRight: false)
+                }
+                .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 8)
             .padding(.vertical, 16)
             .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
             .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
             .padding(.horizontal, 16)
         }
+    }
+
+    private var infoConnector: some View {
+        HStack(spacing: 0) {
+            Circle().fill(Color(.label)).frame(width: 5, height: 5)
+            Rectangle().fill(Color(.label).opacity(0.45)).frame(height: 1.5)
+            Circle().fill(Color(.label)).frame(width: 5, height: 5)
+        }
+    }
+
+    private func infoPill(
+        num: String,
+        label: String,
+        value: Double,
+        sub: String,
+        gradient: [Color],
+        numOnRight: Bool
+    ) -> some View {
+        HStack(spacing: 5) {
+            if !numOnRight {
+                numBadgeView(num)
+            } else {
+                Image(systemName: num == "1" ? "arrow.up.right" : "arrow.down.left")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 22, height: 22)
+                    .background(.white.opacity(0.18), in: Circle())
+            }
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(label.uppercased())
+                    .font(.system(size: 6.5, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .tracking(0.5)
+                    .lineLimit(1)
+                Text(fmtShort(value))
+                    .font(.system(size: 12, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .minimumScaleFactor(0.55)
+                    .lineLimit(1)
+                Text(sub)
+                    .font(.system(size: 6.5))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if numOnRight {
+                numBadgeView(num)
+            } else {
+                Image(systemName: num == "3" ? "dollarsign" : "clock")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 22, height: 22)
+                    .background(.white.opacity(0.18), in: Circle())
+            }
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 10)
+        .background(
+            LinearGradient(colors: gradient, startPoint: .leading, endPoint: .trailing)
+        )
+        .clipShape(Capsule())
+        .shadow(color: gradient[0].opacity(0.28), radius: 5, y: 3)
+    }
+
+    private func numBadgeView(_ num: String) -> some View {
+        ZStack {
+            Circle().fill(.white.opacity(0.22))
+            Circle().strokeBorder(.white.opacity(0.4), lineWidth: 1.5)
+            Text(num)
+                .font(.system(size: 13, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+        }
+        .frame(width: 28, height: 28)
     }
 
     private func fmtShort(_ v: Double) -> String {
