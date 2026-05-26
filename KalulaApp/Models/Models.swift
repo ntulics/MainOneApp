@@ -42,6 +42,22 @@ struct Quote: Codable, Identifiable, Hashable {
     let contact: QuoteContact?
     var lineItems: [LineItem]
 
+    init(from decoder: Decoder) throws {
+        let c       = try decoder.container(keyedBy: CodingKeys.self)
+        id          = try  c.decode(String.self,      forKey: .id)
+        number      = try  c.decode(String.self,      forKey: .number)
+        status      = (try? c.decode(String.self,     forKey: .status))      ?? "DRAFT"
+        projectName = try? c.decode(String.self,      forKey: .projectName)
+        notes       = try? c.decode(String.self,      forKey: .notes)
+        subtotal    = (try? c.decode(Double.self,     forKey: .subtotal))    ?? 0
+        tax         = (try? c.decode(Double.self,     forKey: .tax))         ?? 0
+        total       = (try? c.decode(Double.self,     forKey: .total))       ?? 0
+        validUntil  = try? c.decode(String.self,      forKey: .validUntil)
+        createdAt   = (try? c.decode(String.self,     forKey: .createdAt))   ?? ""
+        contact     = try? c.decode(QuoteContact.self, forKey: .contact)
+        lineItems   = (try? c.decode([LineItem].self, forKey: .lineItems))   ?? []
+    }
+
     var statusColor: String {
         switch status {
         case "DRAFT":    return "gray"
@@ -72,6 +88,15 @@ struct LineItem: Codable, Identifiable, Hashable {
     var quantity: Double
     var unitPrice: Double
     var total: Double
+
+    init(from decoder: Decoder) throws {
+        let c   = try decoder.container(keyedBy: CodingKeys.self)
+        id          = (try? c.decode(String.self, forKey: .id)) ?? UUID().uuidString
+        description = (try? c.decode(String.self, forKey: .description)) ?? ""
+        quantity    = (try? c.decode(Double.self,  forKey: .quantity))    ?? 1
+        unitPrice   = (try? c.decode(Double.self,  forKey: .unitPrice))   ?? 0
+        total       = (try? c.decode(Double.self,  forKey: .total))       ?? 0
+    }
 }
 
 // MARK: - Documents
@@ -240,6 +265,22 @@ struct Invoice: Codable, Identifiable, Hashable {
     let createdAt: String
     let contact: QuoteContact?
     var lineItems: [LineItem]
+
+    init(from decoder: Decoder) throws {
+        let c       = try decoder.container(keyedBy: CodingKeys.self)
+        id          = try  c.decode(String.self,       forKey: .id)
+        number      = try  c.decode(String.self,       forKey: .number)
+        status      = (try? c.decode(String.self,      forKey: .status))     ?? "DRAFT"
+        projectName = try? c.decode(String.self,       forKey: .projectName)
+        notes       = try? c.decode(String.self,       forKey: .notes)
+        subtotal    = (try? c.decode(Double.self,      forKey: .subtotal))   ?? 0
+        tax         = (try? c.decode(Double.self,      forKey: .tax))        ?? 0
+        total       = (try? c.decode(Double.self,      forKey: .total))      ?? 0
+        dueDate     = try? c.decode(String.self,       forKey: .dueDate)
+        createdAt   = (try? c.decode(String.self,      forKey: .createdAt))  ?? ""
+        contact     = try? c.decode(QuoteContact.self, forKey: .contact)
+        lineItems   = (try? c.decode([LineItem].self,  forKey: .lineItems))  ?? []
+    }
 }
 
 struct CreateInvoiceRequest: Encodable {

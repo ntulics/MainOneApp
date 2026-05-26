@@ -63,7 +63,9 @@ struct CustomersView: View {
                     } else {
                         List {
                             ForEach(vm.filtered) { contact in
-                                ContactRow(contact: contact)
+                                NavigationLink(value: contact) {
+                                    ContactRow(contact: contact)
+                                }
                             }
                             .onDelete { idx in
                                 let items = idx.map { vm.filtered[$0] }
@@ -77,6 +79,7 @@ struct CustomersView: View {
                 .searchable(text: $vm.searchText, prompt: "Search clients")
                 .navigationTitle("Clients")
                 .navigationBarTitleDisplayMode(.large)
+                .navigationDestination(for: CRMContact.self) { CustomerDetailView(contact: $0) }
                 .task { await vm.load() }
 
                 // FAB
@@ -233,5 +236,147 @@ struct NewContactSheet: View {
             self.error = error.localizedDescription
         }
         saving = false
+    }
+}
+
+// MARK: - Customer detail
+
+struct CustomerDetailView: View {
+    let contact: CRMContact
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+
+                // Avatar header
+                VStack(spacing: 12) {
+                    Circle()
+                        .fill(avatarColor(contact.displayName).opacity(0.15))
+                        .frame(width: 88, height: 88)
+                        .overlay(
+                            Text(contact.initials)
+                                .font(.system(size: 30, weight: .bold))
+                                .foregroundStyle(avatarColor(contact.displayName))
+                        )
+                    Text(contact.displayName)
+                        .font(.title2.bold())
+                    if let status = contact.status {
+                        Text(status.capitalized)
+                            .font(.caption.bold())
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 4)
+                            .background(statusColor(status).opacity(0.12), in: Capsule())
+                            .foregroundStyle(statusColor(status))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+
+                // Contact info
+                VStack(spacing: 0) {
+                    if let email = contact.email {
+                        ContactInfoRow(icon: "envelope.fill", label: "Email", value: email) {
+                            if let url = URL(string: "mailto:\(email)") { UIApplication.shared.open(url) }
+                        }
+                        Divider().padding(.leading, 52)
+                    }
+                    if let phone = contact.phone {
+                        ContactInfoRow(icon: "phone.fill", label: "Phone", value: phone) {
+                            let tel = phone.replacingOccurrences(of: " ", with: "")
+                            if let url = URL(string: "tel:\(tel)") { UIApplication.shared.open(url) }
+                        }
+                    }
+                }
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 16)
+
+                // Meta
+                if let created = contact.createdAt {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("DETAILS")
+                            .font(.caption.bold())
+                            .foregroundStyle(.secondary)
+                            .tracking(1)
+                            .padding(.horizontal, 16)
+                        VStack(spacing: 0) {
+                            HStack {
+                                Text("Added")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text(shortDate(created))
+                                    .foregroundStyle(.primary)
+                            }
+                            .font(.subheadline)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                        }
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+                        .padding(.horizontal, 16)
+                    }
+                }
+            }
+            .padding(.bottom, 32)
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle(contact.displayName)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func avatarColor(_ name: String) -> Color {
+        let colors: [Color] = [.orange, .blue, .purple, .green, .pink, .indigo, .teal]
+        return colors[abs(name.hashValue) % colors.count]
+    }
+
+    private func statusColor(_ status: String) -> Color {
+        switch status {
+        case "CLIENT":   return .green
+        case "LEAD":     return Color(red: 0, green: 0.478, blue: 1)
+        case "PROSPECT": return Color(red: 0.686, green: 0.322, blue: 0.871)
+        default:         return Color(.systemGray)
+        }
+    }
+
+    private func shortDate(_ iso: String) -> String {
+        let fmt = ISO8601DateFormatter()
+        fmt.formatOptions = [.withFullDate]
+        guard let d = fmt.date(from: iso) else { return iso }
+        let out = DateFormatter()
+        out.dateStyle = .medium
+        return out.string(from: d)
+    }
+}
+
+struct ContactInfoRow: View {
+    let icon:   String
+    let label:  String
+    let value:  String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.orange)
+                    .frame(width: 36, height: 36)
+                    .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(value)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.bold())
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
     }
 }
