@@ -2,7 +2,10 @@ import SwiftUI
 
 // MARK: - View Model
 
-private struct ReceiptItem: Decodable { let total: Double? }
+private struct PurchasesSummary: Decodable {
+    let totalExpenses: Double
+    let paidBills:     Double
+}
 
 @MainActor
 final class DashboardViewModel: ObservableObject {
@@ -92,11 +95,11 @@ final class DashboardViewModel: ObservableObject {
         async let invTask:      [Invoice]          = (try? await APIService.shared.get("/invoices"))        ?? []
         async let qtTask:       [Quote]            = (try? await APIService.shared.get("/quotes"))          ?? []
         async let settingsTask: CompanySettings?   = try? await APIService.shared.get("/settings/company")
-        async let receiptsTask: [ReceiptItem]      = (try? await APIService.shared.get("/receipts"))       ?? []
-        let (i, q, s, r) = await (invTask, qtTask, settingsTask, receiptsTask)
+        async let purchasesTask: PurchasesSummary? = try? await APIService.shared.get("/purchases/summary")
+        let (i, q, s, p) = await (invTask, qtTask, settingsTask, purchasesTask)
         invoices  = i
         quotes    = q
-        expenses  = r.reduce(0) { $0 + ($1.total ?? 0) }
+        expenses  = (p?.totalExpenses ?? 0) + (p?.paidBills ?? 0)
         if let endMonth = s?.settings?.fiscalYearEndMonth { fiscalYearEndMonth = endMonth }
         isLoading = false
     }
