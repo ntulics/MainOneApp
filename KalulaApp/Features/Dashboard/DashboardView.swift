@@ -38,22 +38,33 @@ final class DashboardViewModel: ObservableObject {
 
     var recentInvoices: [Invoice] { Array(invoices.prefix(6)) }
 
+    @Published var fiscalYearEndMonth: Int = 12
+
     var monthlyData: [(label: String, value: Double)] {
         let cal = Calendar.current
         let now = Date()
         let df  = DateFormatter()
         df.dateFormat = "MMM"
+        let isoFull  = ISO8601DateFormatter()
+        isoFull.formatOptions  = [.withInternetDateTime, .withFractionalSeconds]
+        let isoShort = ISO8601DateFormatter()
+        isoShort.formatOptions = [.withFullDate]
+
+        // Fiscal year start is the month after fiscal year end
+        // e.g. end=12 (Dec) → start=1 (Jan); end=2 (Feb) → start=3 (Mar)
+        let fyStartMonth = fiscalYearEndMonth % 12 + 1
+        let currentMonth = cal.component(.month, from: now)
+        let currentYear  = cal.component(.year,  from: now)
+        var fyStartYear  = currentYear
+        if currentMonth < fyStartMonth { fyStartYear -= 1 }
+
+        let fyStartDate = cal.date(from: DateComponents(year: fyStartYear, month: fyStartMonth, day: 1))!
 
         return (0..<12).map { offset in
-            let date  = cal.date(byAdding: .month, value: offset - 11, to: now)!
+            let date  = cal.date(byAdding: .month, value: offset, to: fyStartDate)!
             let month = cal.component(.month, from: date)
             let year  = cal.component(.year,  from: date)
             let label = String(df.string(from: date).prefix(3))
-
-            let isoFull = ISO8601DateFormatter()
-            isoFull.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            let isoShort = ISO8601DateFormatter()
-            isoShort.formatOptions = [.withFullDate]
 
             let rev = invoices
                 .filter { $0.status == "PAID" }
@@ -74,11 +85,13 @@ final class DashboardViewModel: ObservableObject {
         guard !loaded else { return }
         loaded    = true
         isLoading = true
-        async let inv: [Invoice] = (try? await APIService.shared.get("/invoices")) ?? []
-        async let qt:  [Quote]   = (try? await APIService.shared.get("/quotes"))   ?? []
-        let (i, q) = await (inv, qt)
+        async let invTask:      [Invoice]          = (try? await APIService.shared.get("/invoices"))        ?? []
+        async let qtTask:       [Quote]            = (try? await APIService.shared.get("/quotes"))          ?? []
+        async let settingsTask: CompanySettings?   = try? await APIService.shared.get("/settings/company")
+        let (i, q, s) = await (invTask, qtTask, settingsTask)
         invoices  = i
         quotes    = q
+        if let endMonth = s?.fiscalYearEndMonth { fiscalYearEndMonth = endMonth }
         isLoading = false
     }
 

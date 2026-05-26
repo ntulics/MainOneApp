@@ -3,6 +3,7 @@ import SwiftUI
 // Full-screen scanner flow: camera → type selection → processing → result
 struct ScannerView: View {
     let initialType: DocumentType
+    var onScanned: ((ParsedQuote) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
     @State private var phase: ScanPhase = .camera
@@ -15,8 +16,9 @@ struct ScannerView: View {
     @State private var parsedQuote: ParsedQuote?
     @State private var savedDocument: ScannedDocument?
 
-    init(initialType: DocumentType) {
+    init(initialType: DocumentType, onScanned: ((ParsedQuote) -> Void)? = nil) {
         self.initialType = initialType
+        self.onScanned = onScanned
         _selectedType = State(initialValue: initialType)
     }
 
@@ -92,8 +94,15 @@ struct ScannerView: View {
         do {
             if selectedType == .vendorQuote {
                 // OCR + parse
-                parsedQuote = try await DocumentService.shared.parseVendorQuote(images: scannedImages)
-                phase = .quoteReview
+                let parsed = try await DocumentService.shared.parseVendorQuote(images: scannedImages)
+                parsedQuote = parsed
+                if let onScanned {
+                    // Inline mode: return parsed data to caller and dismiss
+                    onScanned(parsed)
+                    dismiss()
+                } else {
+                    phase = .quoteReview
+                }
             } else {
                 // Upload directly
                 let doc = try await DocumentService.shared.uploadScan(

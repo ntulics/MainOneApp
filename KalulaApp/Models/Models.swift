@@ -309,23 +309,39 @@ struct CreateMobileQuoteRequest: Encodable {
     let lineItems: [CreateLineItem]
 }
 
+struct DocumentNumberFormat: Codable {
+    var prefix:     String
+    var separator:  String
+    var dateFormat: String
+    var seqDigits:  Int
+}
+
+struct CompanyDocumentSettings: Codable {
+    let quoteNumberFormat:   DocumentNumberFormat?
+    let invoiceNumberFormat: DocumentNumberFormat?
+}
+
 struct CompanySettings: Codable {
-    let name:       String?
-    let email:      String?
-    let phone:      String?
-    let address:    String?
-    let logoBase64: String?
-    let taxRate:    Double?
-    let currency:   String?
+    let name:               String?
+    let contactEmail:       String?
+    let contactPhone:       String?
+    let address:            String?
+    let logoBase64:         String?
+    let taxRate:            Double?
+    let currency:           String?
+    let fiscalYearEndMonth: Int?
+    let settings:           CompanyDocumentSettings?
 }
 
 struct UpdateCompanySettings: Encodable {
-    let name:     String?
-    let email:    String?
-    let phone:    String?
-    let address:  String?
-    let taxRate:  Double?
-    let currency: String?
+    let name:               String?
+    let contactEmail:       String?
+    let contactPhone:       String?
+    let address:            String?
+    let taxRate:            Double?
+    let currency:           String?
+    let fiscalYearEndMonth: Int?
+    let settings:           CompanyDocumentSettings?
 }
 
 struct UpdateInvoiceRequest: Encodable {

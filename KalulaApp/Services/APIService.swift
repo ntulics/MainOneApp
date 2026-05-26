@@ -69,6 +69,10 @@ actor APIService {
         try await request("PUT", path: path, body: body)
     }
 
+    func patch<T: Decodable>(_ path: String, body: (any Encodable)? = nil) async throws -> T {
+        try await request("PATCH", path: path, body: body)
+    }
+
     @discardableResult
     func delete(_ path: String) async throws -> Data {
         guard let url = URL(string: "\(baseURL)\(path)") else { throw APIServiceError.invalidURL }

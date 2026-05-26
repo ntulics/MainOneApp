@@ -252,6 +252,7 @@ struct NewQuoteSheet: View {
     @State private var items:       [DraftItem] = [DraftItem()]
     @State private var saving       = false
     @State private var error        = ""
+    @State private var showScanner  = false
 
     private var subtotal: Double    { items.reduce(0) { $0 + $1.total } }
     private var tax: Double         { subtotal * ((Double(taxRate) ?? 0) / 100) }
@@ -261,6 +262,18 @@ struct NewQuoteSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Button {
+                        showScanner = true
+                    } label: {
+                        Label("Scan Vendor Quote", systemImage: "doc.text.magnifyingglass")
+                            .frame(maxWidth: .infinity)
+                            .foregroundStyle(.orange)
+                    }
+                } footer: {
+                    Text("Scan a vendor's quote to auto-fill line items, then adjust before saving.")
+                }
+
                 Section("Project") {
                     TextField("Project name (optional)", text: $projectName)
                 }
@@ -348,6 +361,22 @@ struct NewQuoteSheet: View {
                     }
                     .disabled(!isValid || saving)
                 }
+            }
+            .fullScreenCover(isPresented: $showScanner) {
+                ScannerView(initialType: .vendorQuote, onScanned: { parsed in
+                    projectName = parsed.projectName ?? projectName
+                    notes       = parsed.notes       ?? notes
+                    if !parsed.lineItems.isEmpty {
+                        items = parsed.lineItems.map { li in
+                            var d = DraftItem()
+                            d.description = li.description
+                            d.quantity    = String(format: "%g", li.quantity)
+                            d.unitPrice   = String(format: "%g", li.unitPrice)
+                            return d
+                        }
+                    }
+                    showScanner = false
+                })
             }
         }
     }
