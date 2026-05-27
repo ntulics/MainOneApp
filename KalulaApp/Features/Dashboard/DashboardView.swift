@@ -763,10 +763,16 @@ struct DashboardView: View {
                     .offset(y: 2)
 
                     // Legend
+                    let iconNames = ["icon-revenue-wallet", "icon-expenses-arrow", isProfit ? "icon-profit-up" : "icon-profit-down"]
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(0..<3, id: \.self) { k in
                             HStack(alignment: .center, spacing: 8) {
                                 RoundedRectangle(cornerRadius: 2).fill(colors[k]).frame(width: 3, height: 36)
+                                Image(iconNames[k])
+                                    .resizable()
+                                    .renderingMode(.template)
+                                    .foregroundStyle(colors[k])
+                                    .frame(width: 28, height: 28)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(labels[k])
                                         .font(.system(size: 10.5, weight: .bold))
