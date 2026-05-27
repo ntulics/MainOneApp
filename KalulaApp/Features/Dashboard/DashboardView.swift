@@ -495,24 +495,24 @@ struct DashboardView: View {
                                 .rotationEffect(.degrees(-90))
                                 .padding(15)
                         }
-                        Circle().fill(Color.black.opacity(0.35)).padding(30)
-                        VStack(spacing: 1) {
+                        Circle().fill(Color.black.opacity(0.35)).padding(39)
+                        VStack(spacing: 2) {
                             Text("NET")
-                                .font(.system(size: 7, weight: .black))
+                                .font(.system(size: 9, weight: .black))
                                 .foregroundStyle(.white.opacity(0.5))
                                 .tracking(0.5)
                             Text(fmtShort(pl))
-                                .font(.system(size: 12, weight: .black, design: .rounded))
+                                .font(.system(size: 15, weight: .black, design: .rounded))
                                 .foregroundStyle(plColor)
                                 .minimumScaleFactor(0.6)
                                 .lineLimit(1)
                             Text(isProfit ? "profit" : "loss")
-                                .font(.system(size: 6.5))
+                                .font(.system(size: 8.5))
                                 .foregroundStyle(.white.opacity(0.4))
                         }
                     }
-                    .frame(width: 130, height: 130)
-                    .shadow(color: .black.opacity(0.4), radius: 14, y: 7)
+                    .frame(width: 170, height: 170)
+                    .shadow(color: .black.opacity(0.4), radius: 18, y: 9)
 
                     // Legend
                     VStack(alignment: .leading, spacing: 10) {
