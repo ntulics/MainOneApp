@@ -1,5 +1,32 @@
 import SwiftUI
 
+// MARK: - Donut segment filled shape
+// Draws a proper donut arc as a filled path (not a stroked circle).
+// This lets SwiftUI's shadow behave like a physical slab — visible only
+// at exposed edges, hidden where the next overlapping segment covers it.
+private struct DonutSegment: Shape {
+    let startFraction: Double   // 0…1 of full circle
+    let endFraction:   Double
+    let innerRatio:    CGFloat  // inner radius as fraction of view half-width
+    let outerRatio:    CGFloat  // outer radius as fraction of view half-width
+
+    func path(in rect: CGRect) -> Path {
+        let cx = rect.midX, cy = rect.midY
+        let r  = min(rect.width, rect.height) / 2
+        let ri = r * innerRatio
+        let ro = r * outerRatio
+        let s  = Angle(degrees: startFraction * 360 - 90)
+        let e  = Angle(degrees: endFraction   * 360 - 90)
+        var p  = Path()
+        p.addArc(center: CGPoint(x: cx, y: cy), radius: ro,
+                 startAngle: s, endAngle: e, clockwise: false)
+        p.addArc(center: CGPoint(x: cx, y: cy), radius: ri,
+                 startAngle: e, endAngle: s, clockwise: true)
+        p.closeSubpath()
+        return p
+    }
+}
+
 // MARK: - Private models
 
 private struct PurchasesSummary: Decodable {
@@ -476,40 +503,26 @@ struct DashboardView: View {
 
                 // Donut + legend — sized to content, sits tight under label
                 HStack(alignment: .center, spacing: 16) {
-                    // Stacked-card donut
-                    // Each segment (k=1, k=2) starts ~10° before its boundary so it
-                    // overlaps and sits ON TOP of the previous segment in z-order.
-                    // A dedicated blurred dark arc drawn at the leading edge of each
-                    // overlapping segment creates the concentrated "card-on-card" seam shadow.
+                    // Stacked-card donut — each segment is a filled DonutSegment shape.
+                    // Because it's a filled path (not a stroked arc), SwiftUI's shadow
+                    // behaves like a physical slab: visible only at the exposed edges,
+                    // hidden where the next overlapping segment covers it.
+                    // k=0 drawn first (back), k=2 drawn last (front/top).
                     ZStack {
                         ForEach(0..<3, id: \.self) { k in
-                            ZStack {
-                                // ── Seam shadow arc (only for segments that overlap) ──
-                                // Drawn BEFORE the main segment so it appears underneath it
-                                // but ON TOP of the previous segment — exactly like a cast shadow.
-                                if k > 0 {
-                                    Circle()
-                                        .trim(from: st[k],
-                                              to: min(st[k] + 0.04, en[k]))
-                                        .stroke(Color.black.opacity(0.55),
-                                                style: StrokeStyle(lineWidth: 40, lineCap: .butt))
-                                        .rotationEffect(.degrees(-90))
-                                        .padding(12)
-                                        .blur(radius: 5)
-                                }
-                                // ── Main segment (on top of its own shadow) ──
-                                Circle()
-                                    .trim(from: st[k], to: max(en[k], st[k] + 0.001))
-                                    .stroke(colors[k],
-                                            style: StrokeStyle(lineWidth: 34, lineCap: .butt))
-                                    .rotationEffect(.degrees(-90))
-                                    .padding(15)
-                            }
+                            DonutSegment(
+                                startFraction: st[k],
+                                endFraction:   en[k],
+                                innerRatio: 0.52,
+                                outerRatio: 0.97
+                            )
+                            .fill(colors[k])
+                            .shadow(color: .black.opacity(0.55), radius: 6, x: 0, y: 4)
                         }
-                        // Inner hole — filled with card background so it reads clean
+                        // Inner hole — matches card background
                         Circle()
                             .fill(Color(red: 0.059, green: 0.090, blue: 0.165))
-                            .padding(28)
+                            .frame(width: 170 * 0.52 * 2, height: 170 * 0.52 * 2)
                         VStack(spacing: 2) {
                             Text("NET")
                                 .font(.system(size: 9, weight: .black))
