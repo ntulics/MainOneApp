@@ -27,6 +27,51 @@ private struct DonutSegment: Shape {
     }
 }
 
+private struct DonutEndShadow: View {
+    let fraction: Double
+    let innerRatio: CGFloat
+    let outerRatio: CGFloat
+    let opacity: Double
+
+    var body: some View {
+        GeometryReader { proxy in
+            let size = min(proxy.size.width, proxy.size.height)
+            let radius = size / 2
+            let ringMid = radius * (innerRatio + outerRatio) / 2
+            let ringThickness = radius * (outerRatio - innerRatio)
+            let center = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
+            let angle = (fraction * 360 - 90) * .pi / 180
+            let directionX = CGFloat(cos(angle))
+            let directionY = CGFloat(sin(angle))
+
+            Capsule()
+                .fill(.black.opacity(opacity))
+                .frame(width: max(4, ringThickness * 0.16), height: ringThickness * 0.92)
+                .blur(radius: 3)
+                .rotationEffect(.degrees(fraction * 360))
+                .position(
+                    x: center.x + directionX * ringMid,
+                    y: center.y + directionY * ringMid
+                )
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+private struct DonutSliceLabel: View {
+    let percent: Int
+    let isCompact: Bool
+
+    var body: some View {
+        Text("\(percent)%")
+            .font(.system(size: isCompact ? 11 : 15, weight: .black, design: .rounded))
+            .foregroundStyle(.white)
+            .minimumScaleFactor(0.65)
+            .lineLimit(1)
+            .shadow(color: .black.opacity(0.18), radius: 1, x: 0, y: 1)
+    }
+}
+
 // MARK: - Private models
 
 private struct PurchasesSummary: Decodable {
@@ -634,15 +679,13 @@ struct DashboardView: View {
         let values:  [Double] = [rev, exp, pl]
         let total   = rev + exp + pl
         let hasSeg  = total > 0
-        // Stacked-card donut: no gaps, each later segment overlaps the previous by ~6°
-        let overlapF: Double = hasSeg ? 10.0 / 360.0 : 0.0
         let fracs   = hasSeg ? [rev/total, exp/total, pl/total] : [1.0/3, 1.0/3, 1.0/3]
-        // Cumulative boundaries (0 → 1)
+        let percents = fracs.map { Int(round($0 * 100)) }
+        let outerRatios: [CGFloat] = [0.98, 1.03, 1.01]
         var boundaries = [0.0]
         for f in fracs { boundaries.append(min(boundaries.last! + f, 1.0)) }
-        // Each segment starts overlapF before its boundary (except k=0), ends at next boundary
-        let st = (0..<3).map { k in k == 0 ? 0.0 : max(0.0, boundaries[k] - overlapF) }
-        let en = (0..<3).map { k in boundaries[k + 1] }
+        let st = (0..<3).map { boundaries[$0] }
+        let en = (0..<3).map { boundaries[$0 + 1] }
 
         return darkCardShell {
             VStack(alignment: .leading, spacing: 0) {
@@ -654,41 +697,66 @@ struct DashboardView: View {
 
                 // Donut + legend — sized to content, sits tight under label
                 HStack(alignment: .center, spacing: 16) {
-                    // Stacked-card donut — each segment is a filled DonutSegment shape.
-                    // Because it's a filled path (not a stroked arc), SwiftUI's shadow
-                    // behaves like a physical slab: visible only at the exposed edges,
-                    // hidden where the next overlapping segment covers it.
-                    // k=0 drawn first (back), k=2 drawn last (front/top).
-                    // Same inner ratio (aligned hole) — outer ratios give tiered thickness
-                    let outerRatios: [CGFloat] = [0.73, 0.85, 0.97]  // Revenue / Expenses / Profit
-                    ZStack {
-                        ForEach(0..<3, id: \.self) { k in
-                            DonutSegment(
-                                startFraction: st[k],
-                                endFraction:   en[k],
-                                innerRatio: 0.52,
-                                outerRatio: outerRatios[k]
-                            )
-                            .fill(colors[k])
-                            .shadow(color: .black.opacity(0.55), radius: 6, x: 0, y: 4)
-                        }
-                        // Hole sized to shared inner radius (0.52 of frame)
-                        Circle()
-                            .fill(cardHoleColor)
-                            .frame(width: 204 * 0.52, height: 204 * 0.52)
-                        VStack(spacing: 2) {
-                            Text("NET")
-                                .font(.system(size: 9, weight: .black))
-                                .foregroundStyle(cardLabelColor)
-                                .tracking(0.5)
-                            Text(fmtShort(pl))
-                                .font(.system(size: 15, weight: .black, design: .rounded))
-                                .foregroundStyle(plColor)
-                                .minimumScaleFactor(0.6)
-                                .lineLimit(1)
-                            Text(isProfit ? "profit" : "loss")
-                                .font(.system(size: 8.5))
-                                .foregroundStyle(cardSubtleColor)
+                    GeometryReader { proxy in
+                        let size = min(proxy.size.width, proxy.size.height)
+                        let center = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
+                        let labelRadius = size * 0.39
+
+                        ZStack {
+                            ForEach(0..<3, id: \.self) { k in
+                                let mid = (st[k] + en[k]) / 2
+                                let angle = (mid * 360 - 90) * .pi / 180
+                                let directionX = CGFloat(cos(angle))
+                                let directionY = CGFloat(sin(angle))
+                                let labelPoint = CGPoint(
+                                    x: center.x + directionX * labelRadius,
+                                    y: center.y + directionY * labelRadius
+                                )
+                                DonutSegment(
+                                    startFraction: st[k],
+                                    endFraction: max(st[k], en[k]),
+                                    innerRatio: 0.48,
+                                    outerRatio: outerRatios[k]
+                                )
+                                .fill(colors[k])
+                                .shadow(color: .black.opacity(0.42), radius: 9, x: 0, y: 6)
+
+                                DonutEndShadow(
+                                    fraction: en[k],
+                                    innerRatio: 0.48,
+                                    outerRatio: outerRatios[k],
+                                    opacity: k == 1 ? 0.34 : 0.24
+                                )
+
+                                DonutSliceLabel(
+                                    percent: percents[k],
+                                    isCompact: fracs[k] < 0.12
+                                )
+                                .frame(width: 58, height: 34)
+                                .position(labelPoint)
+                            }
+
+                            Circle()
+                                .fill(cardHoleColor)
+                                .frame(width: size * 0.50, height: size * 0.50)
+                                .shadow(color: .black.opacity(colorScheme == .dark ? 0.78 : 0.34),
+                                        radius: 14, x: 0, y: 8)
+                                .shadow(color: .black.opacity(colorScheme == .dark ? 0.34 : 0.14),
+                                        radius: 4, x: 0, y: 2)
+                            VStack(spacing: 3) {
+                                Text("NET")
+                                    .font(.system(size: 9, weight: .black))
+                                    .foregroundStyle(cardLabelColor)
+                                    .tracking(0.5)
+                                Text(fmtShort(pl))
+                                    .font(.system(size: 17, weight: .black, design: .rounded))
+                                    .foregroundStyle(plColor)
+                                    .minimumScaleFactor(0.6)
+                                    .lineLimit(1)
+                                Text(isProfit ? "profit" : "loss")
+                                    .font(.system(size: 8.5))
+                                    .foregroundStyle(cardSubtleColor)
+                            }
                         }
                     }
                     .frame(width: 204, height: 204)
@@ -701,13 +769,17 @@ struct DashboardView: View {
                                 RoundedRectangle(cornerRadius: 2).fill(colors[k]).frame(width: 3, height: 36)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(labels[k])
-                                        .font(.system(size: 9, weight: .bold))
+                                        .font(.system(size: 10.5, weight: .bold))
                                         .foregroundStyle(cardLabelColor)
                                         .textCase(.uppercase)
                                     Text(fmtShort(values[k]))
-                                        .font(.system(size: 14, weight: .black, design: .rounded))
+                                        .font(.system(size: 17, weight: .black, design: .rounded))
                                         .foregroundStyle(cardValueColor)
                                         .minimumScaleFactor(0.65)
+                                        .lineLimit(1)
+                                    Text("\(percents[k])% of total")
+                                        .font(.system(size: 9, weight: .medium))
+                                        .foregroundStyle(cardSubtleColor)
                                         .lineLimit(1)
                                 }
                             }
