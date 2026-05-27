@@ -432,11 +432,13 @@ struct DashboardView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.35))
                     .padding(.top, 2)
-                    .padding(.bottom, 18)
+
+                Spacer(minLength: 0)
 
                 miniBarChart
             }
             .padding(20)
+            .frame(maxHeight: .infinity)
         }
     }
 
@@ -533,8 +535,10 @@ struct DashboardView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(maxHeight: .infinity)
             }
             .padding(20)
+            .frame(maxHeight: .infinity)
         }
     }
 
@@ -575,7 +579,8 @@ struct DashboardView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .padding(.bottom, 16)
+
+                Spacer(minLength: 0)
 
                 // Monthly bars (revenue = "money in" trend)
                 HStack(alignment: .bottom, spacing: 3) {
@@ -597,6 +602,7 @@ struct DashboardView: View {
                 .frame(height: 52, alignment: .bottom)
             }
             .padding(20)
+            .frame(maxHeight: .infinity)
         }
     }
 
