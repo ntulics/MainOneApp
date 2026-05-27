@@ -112,16 +112,34 @@ private struct DomainsListResponse: Decodable {
         let id: String
         let domainName: String?
         let expiryDate: String?
+        let tld: String?          // e.g. "co.za", "com" — used for renewal price lookup
     }
     let domains: [DomainItem]?
 }
 
 private struct UserListItem: Decodable { let id: String }
 
+// Estimated renewal price by TLD (ZAR). Used when no live price is available.
+private func tldRenewalPrice(_ tld: String) -> Double? {
+    let t = tld.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+    switch t {
+    case "co.za", "org.za", "net.za", "web.za", "edu.za": return 120
+    case "com", "net", "org", "info", "biz":               return 350
+    case "io":                                             return 650
+    case "co", "app", "dev":                               return 450
+    case "store", "shop":                                  return 350
+    case "online", "site":                                 return 300
+    case "africa":                                         return 250
+    case "joburg", "capetown", "durban":                   return 200
+    default:                                               return nil
+    }
+}
+
 private struct DomainRenewal: Identifiable {
     let id: String
     let name: String
     let expiryDate: Date?
+    let renewalPrice: Double?     // nil if TLD not in lookup table
 
     var daysLeft: Int? {
         guard let d = expiryDate else { return nil }
@@ -139,6 +157,30 @@ private struct DomainRenewal: Identifiable {
     }
 }
 
+// Individual expense record (PENDING / OVERDUE = unpaid)
+private struct ExpenseItem: Decodable, Identifiable {
+    let id:          String
+    let status:      String?
+    let total:       Double
+    let description: String?
+    let date:        String?
+    let vendor:      VendorRef?
+    struct VendorRef: Decodable { let name: String? }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, status, total, description, date, vendor
+    }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id          = try  c.decode(String.self, forKey: .id)
+        status      = try? c.decode(String.self, forKey: .status)
+        total       = (try? c.decode(Double.self, forKey: .total)) ?? 0
+        description = try? c.decode(String.self, forKey: .description)
+        date        = try? c.decode(String.self, forKey: .date)
+        vendor      = try? c.decode(VendorRef.self, forKey: .vendor)
+    }
+}
+
 // MARK: - View Model
 
 @MainActor
@@ -147,6 +189,7 @@ final class DashboardViewModel: ObservableObject {
     @Published var quotes:    [Quote]    = []
     @Published fileprivate var bills:              [DashBill]             = []
     @Published fileprivate var recurringExpenses:  [RecurringExpenseItem] = []
+    @Published fileprivate var expenseItems:       [ExpenseItem]          = []
     @Published var isLoading  = false
     @Published var range      = "YTD"
     private    var loaded     = false
@@ -286,6 +329,25 @@ final class DashboardViewModel: ObservableObject {
                                                 amount: r.total, dueDate: dueDate, badge: badge))
         }
 
+        // 3. Unpaid / overdue individual expense records
+        for e in expenseItems {
+            guard let s = e.status, s != "PAID" else { continue }
+            let dueDate = e.date.flatMap { parseDate($0) }
+            let name    = e.vendor?.name ?? e.description ?? "Expense"
+            let badge   = s == "OVERDUE" ? "OVERDUE" : "UNPAID"
+            entries.append(UpcomingExpenseEntry(id: "exp-\(e.id)", name: name,
+                                                amount: e.total, dueDate: dueDate, badge: badge))
+        }
+
+        // 4. Domains expiring within 90 days or already expired (where TLD price is known)
+        for domain in domainItems {
+            guard let price = domain.renewalPrice else { continue }
+            guard let daysLeft = domain.daysLeft, daysLeft <= 90 else { continue }
+            let badge = daysLeft <= 0 ? "EXPIRED" : "DOMAIN"
+            entries.append(UpcomingExpenseEntry(id: "dom-\(domain.id)", name: domain.name,
+                                                amount: price, dueDate: domain.expiryDate, badge: badge))
+        }
+
         return entries.sorted { a, b in
             let da = a.dueDate ?? Date.distantFuture
             let db = b.dueDate ?? Date.distantFuture
@@ -328,15 +390,17 @@ final class DashboardViewModel: ObservableObject {
         async let purchasesTask: PurchasesSummary?      =  try? await APIService.shared.get("/purchases/summary")
         async let billsTask:     [DashBill]             = (try? await APIService.shared.get("/bills"))              ?? []
         async let recurringTask: [RecurringExpenseItem] = (try? await APIService.shared.get("/recurring-expenses")) ?? []
+        async let expTask:       [ExpenseItem]          = (try? await APIService.shared.get("/expenses"))           ?? []
         async let summaryTask:   DashboardSummary?      =  try? await APIService.shared.get("/dashboard/summary")
         async let domainsTask:   DomainsListResponse?   =  try? await APIService.shared.get("/domains")
         async let usersTask:     [UserListItem]         = (try? await APIService.shared.get("/identity/users"))    ?? []
 
-        let (i, q, s, p, b, rec, sum, dom, usr) = await (invTask, qtTask, settingsTask, purchasesTask, billsTask, recurringTask, summaryTask, domainsTask, usersTask)
+        let (i, q, s, p, b, rec, exp, sum, dom, usr) = await (invTask, qtTask, settingsTask, purchasesTask, billsTask, recurringTask, expTask, summaryTask, domainsTask, usersTask)
         invoices           = i
         quotes             = q
         bills              = b
         recurringExpenses  = rec
+        expenseItems       = exp
         expenses  = (p?.totalExpenses ?? 0) + (p?.paidBills ?? 0)
         if let endMonth = s?.settings?.fiscalYearEndMonth { fiscalYearEndMonth = endMonth }
         contactCount = sum?.stats?.contacts    ?? 0
@@ -347,7 +411,8 @@ final class DashboardViewModel: ObservableObject {
         domainItems  = (dom?.domains ?? []).map { item in
             DomainRenewal(id: item.id,
                           name: item.domainName ?? item.id,
-                          expiryDate: item.expiryDate.flatMap { parseDate($0) })
+                          expiryDate: item.expiryDate.flatMap { parseDate($0) },
+                          renewalPrice: item.tld.flatMap { tldRenewalPrice($0) })
         }
         userCount    = usr.count
         isLoading = false
@@ -807,8 +872,15 @@ struct DashboardView: View {
                             .foregroundStyle(.white.opacity(0.4))
                             .padding(.vertical, 12)
                     } else {
-                        ForEach(Array(items.prefix(5).enumerated()), id: \.element.id) { idx, item in
+                        ForEach(Array(items.prefix(6).enumerated()), id: \.element.id) { idx, item in
                             if idx > 0 { Divider().background(Color.white.opacity(0.08)) }
+                            let badgeColor: Color = {
+                                switch item.badge {
+                                case "OVERDUE", "EXPIRED": return Color(red: 0.94, green: 0.27, blue: 0.27)
+                                case "DOMAIN":             return Color(red: 0.23, green: 0.51, blue: 0.96)
+                                default:                   return Color.orange
+                                }
+                            }()
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(item.name)
@@ -818,9 +890,9 @@ struct DashboardView: View {
                                     HStack(spacing: 6) {
                                         Text(item.badge)
                                             .font(.system(size: 8.5, weight: .bold))
-                                            .foregroundStyle(Color.orange)
+                                            .foregroundStyle(badgeColor)
                                             .padding(.horizontal, 6).padding(.vertical, 2)
-                                            .background(Color.orange.opacity(0.18), in: Capsule())
+                                            .background(badgeColor.opacity(0.18), in: Capsule())
                                         if let d = item.dueDate {
                                             Text(fmtDueDate(d))
                                                 .font(.system(size: 10))
