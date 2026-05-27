@@ -34,6 +34,25 @@ struct DashBill: Decodable, Identifiable {
     }
 }
 
+// MARK: - Module counts models
+
+private struct DashboardSummary: Decodable {
+    struct Stats: Decodable {
+        let contacts:    Int?
+        let openTickets: Int?
+        let messages:    Int?
+        let calls:       Int?
+    }
+    let stats: Stats?
+}
+
+private struct DomainsListResponse: Decodable {
+    struct DomainItem: Decodable { let id: String }
+    let domains: [DomainItem]?
+}
+
+private struct UserListItem: Decodable { let id: String }
+
 // MARK: - View Model
 
 @MainActor
@@ -44,6 +63,14 @@ final class DashboardViewModel: ObservableObject {
     @Published var isLoading  = false
     @Published var range      = "YTD"
     private    var loaded     = false
+
+    // ── Workspace module counts ──────────────────────────────────────────────
+    @Published var contactCount: Int = 0
+    @Published var ticketCount:  Int = 0
+    @Published var messageCount: Int = 0
+    @Published var callCount:    Int = 0
+    @Published var domainCount:  Int = 0
+    @Published var userCount:    Int = 0
 
     // ── Shared ISO parsers ───────────────────────────────────────────────────
     private let isoFull:  ISO8601DateFormatter = {
@@ -180,17 +207,27 @@ final class DashboardViewModel: ObservableObject {
         guard !loaded else { return }
         loaded    = true
         isLoading = true
-        async let invTask:       [Invoice]          = (try? await APIService.shared.get("/invoices"))        ?? []
-        async let qtTask:        [Quote]            = (try? await APIService.shared.get("/quotes"))          ?? []
-        async let settingsTask:  CompanySettings?   =  try? await APIService.shared.get("/settings/company")
-        async let purchasesTask: PurchasesSummary?  =  try? await APIService.shared.get("/purchases/summary")
-        async let billsTask:     [DashBill]         = (try? await APIService.shared.get("/bills"))           ?? []
-        let (i, q, s, p, b)  = await (invTask, qtTask, settingsTask, purchasesTask, billsTask)
+        async let invTask:       [Invoice]              = (try? await APIService.shared.get("/invoices"))           ?? []
+        async let qtTask:        [Quote]                = (try? await APIService.shared.get("/quotes"))             ?? []
+        async let settingsTask:  CompanySettings?       =  try? await APIService.shared.get("/settings/company")
+        async let purchasesTask: PurchasesSummary?      =  try? await APIService.shared.get("/purchases/summary")
+        async let billsTask:     [DashBill]             = (try? await APIService.shared.get("/bills"))              ?? []
+        async let summaryTask:   DashboardSummary?      =  try? await APIService.shared.get("/dashboard/summary")
+        async let domainsTask:   DomainsListResponse?   =  try? await APIService.shared.get("/domains")
+        async let usersTask:     [UserListItem]         = (try? await APIService.shared.get("/identity/users"))    ?? []
+
+        let (i, q, s, p, b, sum, dom, usr) = await (invTask, qtTask, settingsTask, purchasesTask, billsTask, summaryTask, domainsTask, usersTask)
         invoices  = i
         quotes    = q
         bills     = b
         expenses  = (p?.totalExpenses ?? 0) + (p?.paidBills ?? 0)
         if let endMonth = s?.settings?.fiscalYearEndMonth { fiscalYearEndMonth = endMonth }
+        contactCount = sum?.stats?.contacts    ?? 0
+        ticketCount  = sum?.stats?.openTickets ?? 0
+        messageCount = sum?.stats?.messages    ?? 0
+        callCount    = sum?.stats?.calls       ?? 0
+        domainCount  = dom?.domains?.count     ?? 0
+        userCount    = usr.count
         isLoading = false
     }
 
@@ -221,6 +258,9 @@ struct DashboardView: View {
                     .padding(.top, 12)
 
                 upcomingBillsSection
+                    .padding(.top, 12)
+
+                financialOverviewSection
                     .padding(.top, 12)
 
                 modulesSection
@@ -262,15 +302,29 @@ struct DashboardView: View {
 
             Spacer()
 
-            // Notification bell
-            Button { } label: {
-                ZStack {
-                    Circle()
-                        .fill(Color(.secondarySystemBackground))
-                        .frame(width: 38, height: 38)
-                    Image(systemName: "bell")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.primary)
+            HStack(spacing: 10) {
+                // Notification bell
+                Button { } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color(.secondarySystemBackground))
+                            .frame(width: 38, height: 38)
+                        Image(systemName: "bell")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(.primary)
+                    }
+                }
+
+                // App launcher
+                Button { appState.showMore = true } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color(.secondarySystemBackground))
+                            .frame(width: 38, height: 38)
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(.primary)
+                    }
                 }
             }
         }
@@ -515,25 +569,126 @@ struct DashboardView: View {
         .padding(.horizontal, 16)
     }
 
+    // MARK: - Financial Overview
+
+    private var financialOverviewSection: some View {
+        let rev      = vm.revenue
+        let exp      = vm.expenses
+        let net      = rev - exp
+        let pl       = abs(net)
+        let isProfit = net >= 0
+        let plColor  = isProfit ? Color(red: 0.06, green: 0.73, blue: 0.51) : Color(red: 0.94, green: 0.27, blue: 0.27)
+
+        let colors: [Color]  = [Color.orange, Color(red: 0.94, green: 0.27, blue: 0.27), plColor]
+        let labels: [String] = ["Revenue", "Expenses", isProfit ? "Profit" : "Loss"]
+        let values: [Double] = [rev, exp, pl]
+        let descs:  [String] = ["paid invoices", "total spend", isProfit ? "after expenses" : "exceeds revenue"]
+
+        let total = rev + exp + pl
+        let hasSeg = total > 0
+        let gapF: Double = 3.0 / 360.0
+        let availF: Double = hasSeg ? 1.0 - gapF * 3 : 1.0
+        let rawFracs: [Double] = hasSeg
+            ? [rev / total, exp / total, pl / total]
+            : [1.0/3, 1.0/3, 1.0/3]
+        let spanFracs = rawFracs.map { $0 * availF }
+        var starts = [Double](repeating: 0, count: 3)
+        var ends   = [Double](repeating: 0, count: 3)
+        var run    = 0.0
+        for idx in 0..<3 {
+            starts[idx] = run
+            ends[idx]   = run + spanFracs[idx]
+            run          = ends[idx] + (hasSeg ? gapF : 0)
+        }
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Financial Overview")
+                .font(.headline)
+                .padding(.horizontal, 20)
+
+            HStack(alignment: .center, spacing: 16) {
+
+                // ── Donut ─────────────────────────────────────────────
+                ZStack {
+                    ForEach(0..<3, id: \.self) { idx in
+                        Circle()
+                            .trim(from: starts[idx], to: max(ends[idx], starts[idx] + 0.001))
+                            .stroke(colors[idx], style: StrokeStyle(lineWidth: 36, lineCap: .butt))
+                            .rotationEffect(.degrees(-90))
+                            .padding(18)
+                    }
+                    Circle()
+                        .fill(Color(.secondarySystemGroupedBackground))
+                        .padding(36)
+
+                    VStack(spacing: 2) {
+                        Text("NET")
+                            .font(.system(size: 7.5, weight: .black))
+                            .foregroundStyle(.secondary)
+                            .tracking(0.5)
+                        Text(fmtShort(pl))
+                            .font(.system(size: 13, weight: .black, design: .rounded))
+                            .foregroundStyle(plColor)
+                            .minimumScaleFactor(0.6)
+                            .lineLimit(1)
+                        Text(isProfit ? "profit" : "loss")
+                            .font(.system(size: 6.5))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(width: 150, height: 150)
+
+                // ── Legend ────────────────────────────────────────────
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(0..<3, id: \.self) { idx in
+                        HStack(alignment: .top, spacing: 8) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(colors[idx])
+                                .frame(width: 4, height: 44)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(labels[idx])
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(.primary)
+                                Text(fmtShort(values[idx]))
+                                    .font(.system(size: 14, weight: .black, design: .rounded))
+                                    .foregroundStyle(.primary)
+                                    .minimumScaleFactor(0.65)
+                                    .lineLimit(1)
+                                Text(descs[idx])
+                                    .font(.system(size: 8.5))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 16)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+            .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
+            .padding(.horizontal, 16)
+        }
+    }
+
     // MARK: - Workspace Modules
 
-    private let moduleItems: [(label: String, icon: String)] = [
-        ("Contacts",      "person.2.fill"),
-        ("Open Tickets",  "ticket.fill"),
-        ("Messages",      "message.fill"),
-        ("Calls Logged",  "phone.fill"),
-        ("Domains",       "network"),
-        ("Users",         "person.badge.key.fill"),
-    ]
-
     private var modulesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let items: [(label: String, icon: String, count: Int)] = [
+            ("Contacts",     "person.2.fill",          vm.contactCount),
+            ("Open Tickets", "ticket.fill",             vm.ticketCount),
+            ("Messages",     "message.fill",            vm.messageCount),
+            ("Calls Logged", "phone.fill",              vm.callCount),
+            ("Domains",      "network",                 vm.domainCount),
+            ("Users",        "person.badge.key.fill",   vm.userCount),
+        ]
+        return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Workspace")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundStyle(.primary)
                 Spacer()
-                Text("\(moduleItems.count) modules")
+                Text("\(items.count) modules")
                     .font(.system(size: 9, weight: .semibold))
                     .tracking(0.8)
                     .foregroundStyle(.secondary)
@@ -545,14 +700,22 @@ struct DashboardView: View {
                 columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
                 spacing: 8
             ) {
-                ForEach(moduleItems, id: \.label) { item in
-                    VStack(alignment: .leading, spacing: 10) {
-                        Image(systemName: item.icon)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Color.orange)
+                ForEach(items, id: \.label) { item in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Image(systemName: item.icon)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color.orange)
+                            Spacer()
+                        }
+                        Text(vm.isLoading ? "—" : "\(item.count)")
+                            .font(.system(size: 22, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.primary)
+                            .minimumScaleFactor(0.6)
+                            .lineLimit(1)
                         Text(item.label)
                             .font(.system(size: 8.5, weight: .bold))
-                            .tracking(0.5)
+                            .tracking(0.4)
                             .foregroundStyle(.secondary)
                             .textCase(.uppercase)
                     }
