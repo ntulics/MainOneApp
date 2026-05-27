@@ -34,7 +34,41 @@ private struct PurchasesSummary: Decodable {
     let paidBills:     Double
 }
 
-struct DashBill: Decodable, Identifiable {
+private struct RecurringExpenseItem: Decodable, Identifiable {
+    let id:               String
+    let description:      String?
+    let total:            Double
+    let nextExpenseDate:  String?
+    let isActive:         Bool?
+    let frequency:        String?
+    let vendor:           VendorRef?
+    struct VendorRef: Decodable { let name: String? }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, description, total, nextExpenseDate, isActive, frequency, vendor
+    }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id              = try  c.decode(String.self, forKey: .id)
+        description     = try? c.decode(String.self, forKey: .description)
+        total           = (try? c.decode(Double.self, forKey: .total)) ?? 0
+        nextExpenseDate = try? c.decode(String.self, forKey: .nextExpenseDate)
+        isActive        = try? c.decode(Bool.self,   forKey: .isActive)
+        frequency       = try? c.decode(String.self, forKey: .frequency)
+        vendor          = try? c.decode(VendorRef.self, forKey: .vendor)
+    }
+}
+
+// Unified upcoming expense item (bills + recurring expenses)
+private struct UpcomingExpenseEntry: Identifiable {
+    let id:     String
+    let name:   String
+    let amount: Double
+    let dueDate: Date?
+    let badge:  String   // "BILL" | "MONTHLY" | "WEEKLY" | "ANNUAL" etc.
+}
+
+private struct DashBill: Decodable, Identifiable {
     let id:         String
     let number:     String?
     let status:     String?
@@ -84,7 +118,7 @@ private struct DomainsListResponse: Decodable {
 
 private struct UserListItem: Decodable { let id: String }
 
-struct DomainRenewal: Identifiable {
+private struct DomainRenewal: Identifiable {
     let id: String
     let name: String
     let expiryDate: Date?
@@ -111,7 +145,8 @@ struct DomainRenewal: Identifiable {
 final class DashboardViewModel: ObservableObject {
     @Published var invoices:  [Invoice]  = []
     @Published var quotes:    [Quote]    = []
-    @Published var bills:     [DashBill] = []
+    @Published fileprivate var bills:              [DashBill]             = []
+    @Published fileprivate var recurringExpenses:  [RecurringExpenseItem] = []
     @Published var isLoading  = false
     @Published var range      = "YTD"
     private    var loaded     = false
@@ -122,7 +157,7 @@ final class DashboardViewModel: ObservableObject {
     @Published var messageCount: Int = 0
     @Published var callCount:    Int = 0
     @Published var domainCount:  Int = 0
-    @Published var domainItems:  [DomainRenewal] = []
+    @Published fileprivate var domainItems:  [DomainRenewal] = []
     @Published var userCount:    Int = 0
 
     // ── Shared ISO parsers ───────────────────────────────────────────────────
@@ -140,17 +175,22 @@ final class DashboardViewModel: ObservableObject {
     private func parseDate(_ s: String) -> Date? { isoFull.date(from: s) ?? isoShort.date(from: s) }
 
     // ── Core financial metrics ───────────────────────────────────────────────
+    // Note: split filter and reduce into two lines each to help SourceKit type-check.
     var revenue: Double {
-        invoices.filter { $0.status == "PAID" }.reduce(0) { $0 + $1.total }
+        let paid = invoices.filter { $0.status == "PAID" }
+        return paid.reduce(0) { $0 + $1.total }
     }
     var outstanding: Double {
-        invoices.filter { $0.status == "SENT" }.reduce(0) { $0 + $1.total }
+        let sent = invoices.filter { $0.status == "SENT" }
+        return sent.reduce(0) { $0 + $1.total }
     }
     var overdue: Double {
-        invoices.filter { $0.status == "OVERDUE" }.reduce(0) { $0 + $1.total }
+        let od = invoices.filter { $0.status == "OVERDUE" }
+        return od.reduce(0) { $0 + $1.total }
     }
     var draft: Double {
-        invoices.filter { $0.status == "DRAFT" }.reduce(0) { $0 + $1.total }
+        let dr = invoices.filter { $0.status == "DRAFT" }
+        return dr.reduce(0) { $0 + $1.total }
     }
     var outstandingCount: Int { invoices.filter { $0.status == "SENT"    }.count }
     var overdueCount:     Int { invoices.filter { $0.status == "OVERDUE" }.count }
@@ -187,48 +227,70 @@ final class DashboardViewModel: ObservableObject {
     }
 
     // ── Monthly bars for hero chart ──────────────────────────────────────────
+    // NOTE: complex closures inside .map broke SourceKit's type-checker.
+    // Extracted the paid-invoice filter and bar-value helper to keep each
+    // expression simple enough for the compiler to check quickly.
     var monthlyData: [(label: String, value: Double, isCurrent: Bool)] {
-        let cal = Calendar.current
-        let now = Date()
-        let df  = DateFormatter(); df.dateFormat = "MMM"
+        let cal          = Calendar.current
+        let now          = Date()
+        let df           = DateFormatter(); df.dateFormat = "MMM"
         let fyStartMonth = fiscalYearEndMonth % 12 + 1
         let currentMonth = cal.component(.month, from: now)
         let currentYear  = cal.component(.year,  from: now)
         var fyStartYear  = currentYear
         if currentMonth < fyStartMonth { fyStartYear -= 1 }
-        let fyStart = cal.date(from: DateComponents(year: fyStartYear, month: fyStartMonth, day: 1))!
+        let fyStart      = cal.date(from: DateComponents(year: fyStartYear, month: fyStartMonth, day: 1))!
+        let paidInvoices = invoices.filter { $0.status == "PAID" }
 
-        return (0..<12).map { offset in
-            let date  = cal.date(byAdding: .month, value: offset, to: fyStart)!
-            let month = cal.component(.month, from: date)
-            let year  = cal.component(.year,  from: date)
-            let label = String(df.string(from: date).prefix(3))
-            let val   = invoices.filter { $0.status == "PAID" }.compactMap { inv -> Double? in
-                guard let d = parseDate(inv.createdAt) else { return nil }
-                guard cal.component(.month, from: d) == month,
-                      cal.component(.year,  from: d) == year  else { return nil }
-                return inv.total
-            }.reduce(0, +)
+        return (0..<12).map { offset -> (label: String, value: Double, isCurrent: Bool) in
+            let date      = cal.date(byAdding: .month, value: offset, to: fyStart)!
+            let month     = cal.component(.month, from: date)
+            let year      = cal.component(.year,  from: date)
+            let label     = String(df.string(from: date).prefix(3))
             let isCurrent = month == currentMonth && year == currentYear
+            let val: Double = paidInvoices.reduce(0) { sum, inv in
+                guard let d = parseDate(inv.createdAt) else { return sum }
+                let m = cal.component(.month, from: d)
+                let y = cal.component(.year,  from: d)
+                return (m == month && y == year) ? sum + inv.total : sum
+            }
             return (label, val, isCurrent)
         }
     }
 
-    // ── Upcoming bills (due within 14 days, unpaid) ──────────────────────────
-    var upcomingBills: [DashBill] {
+    // ── Upcoming expenses: unpaid bills due in 30 days + active recurring ──────
+    fileprivate var upcomingExpenses: [UpcomingExpenseEntry] {
+        let cal   = Calendar.current
         let now   = Date()
-        let in14  = Calendar.current.date(byAdding: .day, value: 14, to: now) ?? now
-        return bills
-            .filter { b in
-                guard let s = b.status, s != "PAID", let ds = b.dueDate,
-                      let d = parseDate(ds) else { return false }
-                return d >= now && d <= in14
-            }
-            .sorted { a, b in
-                let da = a.dueDate.flatMap { parseDate($0) } ?? Date.distantFuture
-                let db = b.dueDate.flatMap { parseDate($0) } ?? Date.distantFuture
-                return da < db
-            }
+        let in30  = cal.date(byAdding: .day, value: 30, to: now) ?? now
+
+        var entries: [UpcomingExpenseEntry] = []
+
+        // 1. Bills due within 30 days, unpaid
+        for b in bills {
+            guard let s = b.status, s != "PAID" else { continue }
+            guard let ds = b.dueDate, let d = parseDate(ds) else { continue }
+            guard d >= now && d <= in30 else { continue }
+            let name = b.vendor?.name ?? b.number ?? "Bill"
+            entries.append(UpcomingExpenseEntry(id: "bill-\(b.id)", name: name,
+                                                amount: b.total, dueDate: d, badge: "BILL"))
+        }
+
+        // 2. Active recurring expenses (show all active; sort by next due date)
+        for r in recurringExpenses {
+            guard r.isActive == true else { continue }
+            let dueDate = r.nextExpenseDate.flatMap { parseDate($0) }
+            let name    = r.vendor?.name ?? r.description ?? "Recurring"
+            let badge   = r.frequency.map { $0.capitalized } ?? "Recurring"
+            entries.append(UpcomingExpenseEntry(id: "rec-\(r.id)", name: name,
+                                                amount: r.total, dueDate: dueDate, badge: badge))
+        }
+
+        return entries.sorted { a, b in
+            let da = a.dueDate ?? Date.distantFuture
+            let db = b.dueDate ?? Date.distantFuture
+            return da < db
+        }
     }
 
     // ── Top customers from paid invoices ─────────────────────────────────────
@@ -265,14 +327,16 @@ final class DashboardViewModel: ObservableObject {
         async let settingsTask:  CompanySettings?       =  try? await APIService.shared.get("/settings/company")
         async let purchasesTask: PurchasesSummary?      =  try? await APIService.shared.get("/purchases/summary")
         async let billsTask:     [DashBill]             = (try? await APIService.shared.get("/bills"))              ?? []
+        async let recurringTask: [RecurringExpenseItem] = (try? await APIService.shared.get("/recurring-expenses")) ?? []
         async let summaryTask:   DashboardSummary?      =  try? await APIService.shared.get("/dashboard/summary")
         async let domainsTask:   DomainsListResponse?   =  try? await APIService.shared.get("/domains")
         async let usersTask:     [UserListItem]         = (try? await APIService.shared.get("/identity/users"))    ?? []
 
-        let (i, q, s, p, b, sum, dom, usr) = await (invTask, qtTask, settingsTask, purchasesTask, billsTask, summaryTask, domainsTask, usersTask)
-        invoices  = i
-        quotes    = q
-        bills     = b
+        let (i, q, s, p, b, rec, sum, dom, usr) = await (invTask, qtTask, settingsTask, purchasesTask, billsTask, recurringTask, summaryTask, domainsTask, usersTask)
+        invoices           = i
+        quotes             = q
+        bills              = b
+        recurringExpenses  = rec
         expenses  = (p?.totalExpenses ?? 0) + (p?.paidBills ?? 0)
         if let endMonth = s?.settings?.fiscalYearEndMonth { fiscalYearEndMonth = endMonth }
         contactCount = sum?.stats?.contacts    ?? 0
@@ -614,18 +678,7 @@ struct DashboardView: View {
                 // Monthly bars (revenue = "money in" trend)
                 HStack(alignment: .bottom, spacing: 3) {
                     ForEach(Array(data.enumerated()), id: \.offset) { _, item in
-                        let pct  = CGFloat(item.value / maxVal)
-                        let barH = item.value > 0 ? max(4, pct * 38) : CGFloat(3)
-                        VStack(spacing: 3) {
-                            Capsule()
-                                .fill(item.isCurrent ? Color.orange : Color.white.opacity(0.18))
-                                .frame(height: barH)
-                            Text(item.label)
-                                .font(.system(size: 7, weight: item.isCurrent ? .bold : .regular))
-                                .foregroundStyle(item.isCurrent ? Color.orange : .white.opacity(0.25))
-                                .fixedSize()
-                        }
-                        .frame(maxWidth: .infinity, alignment: .bottom)
+                        miniBar(item: item, maxVal: maxVal, maxH: 38, tint: Color(red: 0.06, green: 0.73, blue: 0.51))
                     }
                 }
                 .frame(height: 52, alignment: .bottom)
@@ -662,25 +715,29 @@ struct DashboardView: View {
         let maxVal = max(data.map(\.value).max() ?? 0, 1)
 
         return HStack(alignment: .bottom, spacing: 3) {
-            ForEach(Array(data.enumerated()), id: \.offset) { _, item in
-                let pct  = CGFloat(item.value / maxVal)
-                let barH = item.value > 0 ? max(4, pct * 44) : CGFloat(3)
-                let bg: Color = item.value == 0
-                    ? .white.opacity(0.05)
-                    : item.isCurrent ? .orange : .white.opacity(0.22)
-                VStack(spacing: 4) {
-                    Capsule()
-                        .fill(bg)
-                        .frame(height: barH)
-                    Text(item.label)
-                        .font(.system(size: 7.5, weight: item.isCurrent ? .bold : .regular))
-                        .foregroundStyle(item.isCurrent ? Color.orange : .white.opacity(0.3))
-                        .fixedSize()
-                }
-                .frame(maxWidth: .infinity, alignment: .bottom)
+            ForEach(Array(data.enumerated()), id: \.offset) { idx, item in
+                miniBar(item: item, maxVal: maxVal, maxH: 44, tint: .orange)
             }
         }
         .frame(height: 60, alignment: .bottom)
+    }
+
+    // Extracted so the type-checker doesn't time out inside ForEach
+    private func miniBar(item: (label: String, value: Double, isCurrent: Bool),
+                         maxVal: Double, maxH: CGFloat, tint: Color) -> some View {
+        let pct:  CGFloat = item.value > 0 ? CGFloat(item.value / maxVal) : 0
+        let barH: CGFloat = item.value > 0 ? max(3, pct * maxH) : 2
+        let bg: Color     = item.value == 0
+            ? .white.opacity(0.05)
+            : item.isCurrent ? tint : .white.opacity(0.22)
+        return VStack(spacing: 4) {
+            Capsule().fill(bg).frame(height: barH)
+            Text(item.label)
+                .font(.system(size: 7.5, weight: item.isCurrent ? .bold : .regular))
+                .foregroundStyle(item.isCurrent ? tint : .white.opacity(0.3))
+                .fixedSize()
+        }
+        .frame(maxWidth: .infinity, alignment: .bottom)
     }
 
     // MARK: - Status row (Outstanding / Overdue / Draft)
@@ -717,12 +774,12 @@ struct DashboardView: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
-    // MARK: - Upcoming Bills (dark card)
+    // MARK: - Upcoming Expenses (bills + active recurring expenses)
 
     private var upcomingBillsSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        let items = vm.upcomingExpenses
+        return VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .topTrailing) {
-                // Background (same dark gradient as hero)
                 LinearGradient(
                     colors: colorScheme == .dark
                         ? [Color(red: 0.10, green: 0.11, blue: 0.15), Color(red: 0.17, green: 0.19, blue: 0.26)]
@@ -731,44 +788,48 @@ struct DashboardView: View {
                 )
 
                 VStack(alignment: .leading, spacing: 0) {
-                    // Header
                     HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("UPCOMING · BILLS")
-                                .font(.system(size: 9.5, weight: .bold))
-                                .tracking(1.5)
-                                .foregroundStyle(.white.opacity(0.5))
-                        }
+                        Text("UPCOMING · EXPENSES")
+                            .font(.system(size: 9.5, weight: .bold))
+                            .tracking(1.5)
+                            .foregroundStyle(.white.opacity(0.5))
                         Spacer()
-                        Text("PAY ALL →")
+                        Text("VIEW ALL →")
                             .font(.system(size: 10, weight: .bold))
                             .tracking(1)
                             .foregroundStyle(Color.orange)
                     }
                     .padding(.bottom, 14)
 
-                    if vm.upcomingBills.isEmpty {
-                        Text("No bills due in the next 14 days")
+                    if items.isEmpty {
+                        Text("No upcoming expenses")
                             .font(.system(size: 13))
                             .foregroundStyle(.white.opacity(0.4))
                             .padding(.vertical, 12)
                     } else {
-                        ForEach(Array(vm.upcomingBills.prefix(3).enumerated()), id: \.element.id) { idx, bill in
-                            if idx > 0 {
-                                Divider().background(Color.white.opacity(0.08))
-                            }
+                        ForEach(Array(items.prefix(5).enumerated()), id: \.element.id) { idx, item in
+                            if idx > 0 { Divider().background(Color.white.opacity(0.08)) }
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text(bill.vendor?.name ?? "Unknown Vendor")
+                                    Text(item.name)
                                         .font(.system(size: 13, weight: .semibold))
                                         .foregroundStyle(.white)
                                         .lineLimit(1)
-                                    Text(fmtDue(bill.dueDate))
-                                        .font(.system(size: 10))
-                                        .foregroundStyle(.white.opacity(0.4))
+                                    HStack(spacing: 6) {
+                                        Text(item.badge)
+                                            .font(.system(size: 8.5, weight: .bold))
+                                            .foregroundStyle(Color.orange)
+                                            .padding(.horizontal, 6).padding(.vertical, 2)
+                                            .background(Color.orange.opacity(0.18), in: Capsule())
+                                        if let d = item.dueDate {
+                                            Text(fmtDueDate(d))
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(.white.opacity(0.4))
+                                        }
+                                    }
                                 }
                                 Spacer()
-                                Text(fmtShort(bill.total))
+                                Text(fmtShort(item.amount))
                                     .font(.system(size: 13, weight: .bold, design: .rounded))
                                     .foregroundStyle(.white)
                             }
@@ -778,12 +839,8 @@ struct DashboardView: View {
                 }
                 .padding(20)
             }
-            // Accent line
-            LinearGradient(
-                colors: [.orange, .orange.opacity(0)],
-                startPoint: .leading, endPoint: .trailing
-            )
-            .frame(height: 3)
+            LinearGradient(colors: [.orange, .orange.opacity(0)], startPoint: .leading, endPoint: .trailing)
+                .frame(height: 3)
         }
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .shadow(color: .black.opacity(0.18), radius: 14, y: 5)
@@ -1033,6 +1090,17 @@ struct DashboardView: View {
     private let isoShort: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter(); f.formatOptions = [.withFullDate]; return f
     }()
+
+    private func fmtDueDate(_ d: Date) -> String {
+        let cal  = Calendar.current
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: Date()),
+                                              to:   cal.startOfDay(for: d)).day ?? 0
+        if days < 0  { return "Overdue" }
+        if days == 0 { return "Today" }
+        if days == 1 { return "Tomorrow" }
+        if days <= 7 { return "In \(days) days" }
+        return d.formatted(.dateTime.day().month(.abbreviated))
+    }
 
     private var greeting: String {
         switch Calendar.current.component(.hour, from: Date()) {
