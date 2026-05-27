@@ -472,8 +472,9 @@ struct DashboardView: View {
                     .font(.system(size: 9.5, weight: .bold))
                     .tracking(1.8)
                     .foregroundStyle(.white.opacity(0.5))
-                    .padding(.bottom, 16)
+                    .padding(.bottom, 6)
 
+                // Donut + legend — sized to content, sits tight under label
                 HStack(alignment: .center, spacing: 16) {
                     // Stacked-card donut — segments drawn back→front; later = on top
                     ZStack {
@@ -528,7 +529,9 @@ struct DashboardView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxHeight: .infinity)
+
+                // Absorb leftover vertical space below the donut
+                Spacer(minLength: 0)
             }
             .padding(20)
             .frame(maxHeight: .infinity)
