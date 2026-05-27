@@ -250,17 +250,14 @@ struct DashboardView: View {
                     .padding(.top, 16)
                     .padding(.bottom, 16)
 
-                heroCard
-                    .padding(.horizontal, 16)
+                swipeableHeroCards
+                    .padding(.top, 4)
 
                 statusRow
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
 
                 upcomingBillsSection
-                    .padding(.top, 12)
-
-                financialOverviewSection
                     .padding(.top, 12)
 
                 modulesSection
@@ -330,37 +327,48 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: - Hero Revenue Card
+    // MARK: - Swipeable hero carousel (Revenue · Financial Overview · Cash Flow)
 
-    private var heroCard: some View {
+    private var swipeableHeroCards: some View {
+        TabView {
+            revenueCard.tag(0)
+            financialOverviewCard.tag(1)
+            cashFlowCard.tag(2)
+        }
+        .tabViewStyle(.page(indexDisplayMode: .always))
+        .frame(height: 300)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .shadow(color: .black.opacity(0.2), radius: 16, y: 6)
+        .padding(.horizontal, 16)
+    }
+
+    // Shared dark card shell (gradient + glows + accent line)
+    @ViewBuilder
+    private func darkCardShell<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         ZStack(alignment: .topTrailing) {
-            // Background gradient
             LinearGradient(
                 colors: colorScheme == .dark
                     ? [Color(red: 0.10, green: 0.11, blue: 0.15), Color(red: 0.17, green: 0.19, blue: 0.26)]
                     : [Color(red: 0.059, green: 0.090, blue: 0.165), Color(red: 0.118, green: 0.176, blue: 0.294)],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             )
+            Circle().fill(Color.orange).frame(width: 160, height: 160).blur(radius: 50).offset(x: 40, y: -55).opacity(0.26)
+            Circle().fill(Color(red: 0.0, green: 0.48, blue: 1.0)).frame(width: 120, height: 120).blur(radius: 60).offset(x: -110, y: 60).opacity(0.16)
+            content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            VStack {
+                Spacer()
+                LinearGradient(colors: [.orange, .orange.opacity(0)], startPoint: .leading, endPoint: .trailing)
+                    .frame(height: 3)
+            }
+        }
+    }
 
-            // Orange glow (top right)
-            Circle()
-                .fill(Color.orange)
-                .frame(width: 160, height: 160)
-                .blur(radius: 50)
-                .offset(x: 35, y: -50)
-                .opacity(0.28)
+    // ── Card 1: Total Revenue ─────────────────────────────────────────────────
 
-            // Blue glow (bottom left)
-            Circle()
-                .fill(Color(red: 0.0, green: 0.48, blue: 1.0))
-                .frame(width: 120, height: 120)
-                .blur(radius: 60)
-                .offset(x: -110, y: 55)
-                .opacity(0.18)
-
-            // Content
+    private var revenueCard: some View {
+        darkCardShell {
             VStack(alignment: .leading, spacing: 0) {
-                // Title + range tabs
                 HStack(alignment: .center) {
                     Text("TOTAL REVENUE")
                         .font(.system(size: 9.5, weight: .bold))
@@ -371,12 +379,9 @@ struct DashboardView: View {
                 }
                 .padding(.bottom, 14)
 
-                // Big number + delta
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     if vm.isLoading {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.white.opacity(0.1))
-                            .frame(width: 180, height: 40)
+                        RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.1)).frame(width: 180, height: 40)
                     } else {
                         Text(fmtShort(vm.rangeRevenue))
                             .font(.system(size: 40, weight: .heavy, design: .rounded))
@@ -398,20 +403,152 @@ struct DashboardView: View {
                 miniBarChart
             }
             .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            // Accent line at bottom
-            VStack {
-                Spacer()
-                LinearGradient(
-                    colors: [.orange, .orange.opacity(0)],
-                    startPoint: .leading, endPoint: .trailing
-                )
-                .frame(height: 3)
-            }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 22))
-        .shadow(color: .black.opacity(0.2), radius: 16, y: 6)
+    }
+
+    // ── Card 2: Financial Overview ────────────────────────────────────────────
+
+    private var financialOverviewCard: some View {
+        let rev      = vm.revenue
+        let exp      = vm.expenses
+        let net      = rev - exp
+        let pl       = abs(net)
+        let isProfit = net >= 0
+        let plColor  = isProfit ? Color(red: 0.06, green: 0.73, blue: 0.51) : Color(red: 0.94, green: 0.27, blue: 0.27)
+        let colors:  [Color]  = [Color.orange, Color(red: 0.94, green: 0.27, blue: 0.27), plColor]
+        let labels:  [String] = ["Revenue", "Expenses", isProfit ? "Profit" : "Loss"]
+        let values:  [Double] = [rev, exp, pl]
+        let total   = rev + exp + pl
+        let hasSeg  = total > 0
+        let gapF:   Double = 3.0 / 360.0
+        let availF: Double = hasSeg ? 1.0 - gapF * 3 : 1.0
+        let fracs   = hasSeg ? [rev/total, exp/total, pl/total] : [1.0/3, 1.0/3, 1.0/3]
+        let spans   = fracs.map { $0 * availF }
+        var st = [Double](repeating: 0, count: 3), en = [Double](repeating: 0, count: 3), run = 0.0
+        for k in 0..<3 { st[k] = run; en[k] = run + spans[k]; run = en[k] + (hasSeg ? gapF : 0) }
+
+        return darkCardShell {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("FINANCIAL OVERVIEW")
+                    .font(.system(size: 9.5, weight: .bold))
+                    .tracking(1.8)
+                    .foregroundStyle(.white.opacity(0.5))
+                    .padding(.bottom, 16)
+
+                HStack(alignment: .center, spacing: 16) {
+                    // Donut
+                    ZStack {
+                        ForEach(0..<3, id: \.self) { k in
+                            Circle()
+                                .trim(from: st[k], to: max(en[k], st[k] + 0.001))
+                                .stroke(colors[k], style: StrokeStyle(lineWidth: 30, lineCap: .butt))
+                                .rotationEffect(.degrees(-90))
+                                .padding(15)
+                        }
+                        Circle().fill(Color.black.opacity(0.35)).padding(30)
+                        VStack(spacing: 1) {
+                            Text("NET")
+                                .font(.system(size: 7, weight: .black))
+                                .foregroundStyle(.white.opacity(0.5))
+                                .tracking(0.5)
+                            Text(fmtShort(pl))
+                                .font(.system(size: 12, weight: .black, design: .rounded))
+                                .foregroundStyle(plColor)
+                                .minimumScaleFactor(0.6)
+                                .lineLimit(1)
+                            Text(isProfit ? "profit" : "loss")
+                                .font(.system(size: 6.5))
+                                .foregroundStyle(.white.opacity(0.4))
+                        }
+                    }
+                    .frame(width: 130, height: 130)
+
+                    // Legend
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(0..<3, id: \.self) { k in
+                            HStack(alignment: .center, spacing: 8) {
+                                RoundedRectangle(cornerRadius: 2).fill(colors[k]).frame(width: 3, height: 36)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(labels[k])
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundStyle(.white.opacity(0.55))
+                                        .textCase(.uppercase)
+                                    Text(fmtShort(values[k]))
+                                        .font(.system(size: 14, weight: .black, design: .rounded))
+                                        .foregroundStyle(.white)
+                                        .minimumScaleFactor(0.65)
+                                        .lineLimit(1)
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding(20)
+        }
+    }
+
+    // ── Card 3: Cash Flow ─────────────────────────────────────────────────────
+
+    private var cashFlowCard: some View {
+        let data     = vm.monthlyData
+        let maxVal   = max(data.map(\.value).max() ?? 0, 1)
+        let net      = vm.revenue - vm.expenses
+        let isProfit = net >= 0
+        let netColor = isProfit ? Color(red: 0.06, green: 0.73, blue: 0.51) : Color(red: 0.94, green: 0.27, blue: 0.27)
+
+        return darkCardShell {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("CASH FLOW · FY")
+                    .font(.system(size: 9.5, weight: .bold))
+                    .tracking(1.8)
+                    .foregroundStyle(.white.opacity(0.5))
+                    .padding(.bottom, 12)
+
+                // Stats row
+                HStack(spacing: 0) {
+                    ForEach([
+                        (label: "Money In",  value: vm.revenue,   color: Color.orange),
+                        (label: "Money Out", value: vm.expenses,  color: Color.white.opacity(0.4)),
+                        (label: "Net",       value: abs(net),     color: netColor),
+                    ], id: \.label) { stat in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(stat.label)
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.45))
+                            Text(fmtShort(stat.value))
+                                .font(.system(size: 16, weight: .heavy, design: .rounded))
+                                .foregroundStyle(stat.color)
+                                .minimumScaleFactor(0.6)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(.bottom, 16)
+
+                // Monthly bars (revenue = "money in" trend)
+                HStack(alignment: .bottom, spacing: 3) {
+                    ForEach(Array(data.enumerated()), id: \.offset) { _, item in
+                        let pct  = CGFloat(item.value / maxVal)
+                        let barH = item.value > 0 ? max(4, pct * 38) : CGFloat(3)
+                        VStack(spacing: 3) {
+                            Capsule()
+                                .fill(item.isCurrent ? Color.orange : Color.white.opacity(0.18))
+                                .frame(height: barH)
+                            Text(item.label)
+                                .font(.system(size: 7, weight: item.isCurrent ? .bold : .regular))
+                                .foregroundStyle(item.isCurrent ? Color.orange : .white.opacity(0.25))
+                                .fixedSize()
+                        }
+                        .frame(maxWidth: .infinity, alignment: .bottom)
+                    }
+                }
+                .frame(height: 52, alignment: .bottom)
+            }
+            .padding(20)
+        }
     }
 
     private var rangeTabBar: some View {
@@ -569,107 +706,7 @@ struct DashboardView: View {
         .padding(.horizontal, 16)
     }
 
-    // MARK: - Financial Overview
-
-    private var financialOverviewSection: some View {
-        let rev      = vm.revenue
-        let exp      = vm.expenses
-        let net      = rev - exp
-        let pl       = abs(net)
-        let isProfit = net >= 0
-        let plColor  = isProfit ? Color(red: 0.06, green: 0.73, blue: 0.51) : Color(red: 0.94, green: 0.27, blue: 0.27)
-
-        let colors: [Color]  = [Color.orange, Color(red: 0.94, green: 0.27, blue: 0.27), plColor]
-        let labels: [String] = ["Revenue", "Expenses", isProfit ? "Profit" : "Loss"]
-        let values: [Double] = [rev, exp, pl]
-        let descs:  [String] = ["paid invoices", "total spend", isProfit ? "after expenses" : "exceeds revenue"]
-
-        let total = rev + exp + pl
-        let hasSeg = total > 0
-        let gapF: Double = 3.0 / 360.0
-        let availF: Double = hasSeg ? 1.0 - gapF * 3 : 1.0
-        let rawFracs: [Double] = hasSeg
-            ? [rev / total, exp / total, pl / total]
-            : [1.0/3, 1.0/3, 1.0/3]
-        let spanFracs = rawFracs.map { $0 * availF }
-        var starts = [Double](repeating: 0, count: 3)
-        var ends   = [Double](repeating: 0, count: 3)
-        var run    = 0.0
-        for idx in 0..<3 {
-            starts[idx] = run
-            ends[idx]   = run + spanFracs[idx]
-            run          = ends[idx] + (hasSeg ? gapF : 0)
-        }
-
-        return VStack(alignment: .leading, spacing: 12) {
-            Text("Financial Overview")
-                .font(.headline)
-                .padding(.horizontal, 20)
-
-            HStack(alignment: .center, spacing: 16) {
-
-                // ── Donut ─────────────────────────────────────────────
-                ZStack {
-                    ForEach(0..<3, id: \.self) { idx in
-                        Circle()
-                            .trim(from: starts[idx], to: max(ends[idx], starts[idx] + 0.001))
-                            .stroke(colors[idx], style: StrokeStyle(lineWidth: 36, lineCap: .butt))
-                            .rotationEffect(.degrees(-90))
-                            .padding(18)
-                    }
-                    Circle()
-                        .fill(Color(.secondarySystemGroupedBackground))
-                        .padding(36)
-
-                    VStack(spacing: 2) {
-                        Text("NET")
-                            .font(.system(size: 7.5, weight: .black))
-                            .foregroundStyle(.secondary)
-                            .tracking(0.5)
-                        Text(fmtShort(pl))
-                            .font(.system(size: 13, weight: .black, design: .rounded))
-                            .foregroundStyle(plColor)
-                            .minimumScaleFactor(0.6)
-                            .lineLimit(1)
-                        Text(isProfit ? "profit" : "loss")
-                            .font(.system(size: 6.5))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .frame(width: 150, height: 150)
-
-                // ── Legend ────────────────────────────────────────────
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(0..<3, id: \.self) { idx in
-                        HStack(alignment: .top, spacing: 8) {
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(colors[idx])
-                                .frame(width: 4, height: 44)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(labels[idx])
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundStyle(.primary)
-                                Text(fmtShort(values[idx]))
-                                    .font(.system(size: 14, weight: .black, design: .rounded))
-                                    .foregroundStyle(.primary)
-                                    .minimumScaleFactor(0.65)
-                                    .lineLimit(1)
-                                Text(descs[idx])
-                                    .font(.system(size: 8.5))
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 16)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
-            .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
-            .padding(.horizontal, 16)
-        }
-    }
+    // financialOverviewCard and cashFlowCard are now inside swipeableHeroCards (TabView pager)
 
     // MARK: - Workspace Modules
 
