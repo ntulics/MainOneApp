@@ -532,18 +532,39 @@ struct DashboardView: View {
         .padding(.horizontal, 16)
     }
 
-    // Shared dark card shell (gradient + glows + accent line)
+    // MARK: - Adaptive card colours (light ↔ dark)
+
+    private var cardGradientColors: [Color] {
+        colorScheme == .dark
+            ? [Color(red: 0.10, green: 0.11, blue: 0.15), Color(red: 0.17, green: 0.19, blue: 0.26)]
+            : [Color(.systemBackground), Color(.secondarySystemBackground)]
+    }
+    private var cardLabelColor:  Color { colorScheme == .dark ? .white.opacity(0.50) : Color(.secondaryLabel) }
+    private var cardValueColor:  Color { colorScheme == .dark ? .white               : Color(.label) }
+    private var cardSubtleColor: Color { colorScheme == .dark ? .white.opacity(0.35) : Color(.tertiaryLabel) }
+    private var cardBarRest:     Color { colorScheme == .dark ? .white.opacity(0.22) : .black.opacity(0.10) }
+    private var cardBarZero:     Color { colorScheme == .dark ? .white.opacity(0.05) : .black.opacity(0.04) }
+    private var cardBarLabel:    Color { colorScheme == .dark ? .white.opacity(0.30) : Color(.tertiaryLabel) }
+    private var cardDivider:     Color { colorScheme == .dark ? .white.opacity(0.08) : Color(.separator).opacity(0.5) }
+    private var cardHoleColor:   Color {
+        colorScheme == .dark
+            ? Color(red: 0.059, green: 0.090, blue: 0.165)
+            : Color(.systemBackground)
+    }
+    private var rangeTabActiveBg:   Color { colorScheme == .dark ? .white.opacity(0.92) : Color(.label).opacity(0.10) }
+    private var rangeTabActiveText: Color { colorScheme == .dark ? .black               : Color(.label) }
+    private var rangeTabInactiveBg: Color { colorScheme == .dark ? .white.opacity(0.08) : .clear }
+    private var rangeTabInactiveText: Color { colorScheme == .dark ? .white.opacity(0.55) : Color(.secondaryLabel) }
+
+    // Shared card shell — gradient + ambient glows + bottom accent line
     @ViewBuilder
     private func darkCardShell<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         ZStack(alignment: .topTrailing) {
-            LinearGradient(
-                colors: colorScheme == .dark
-                    ? [Color(red: 0.10, green: 0.11, blue: 0.15), Color(red: 0.17, green: 0.19, blue: 0.26)]
-                    : [Color(red: 0.059, green: 0.090, blue: 0.165), Color(red: 0.118, green: 0.176, blue: 0.294)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
-            Circle().fill(Color.orange).frame(width: 160, height: 160).blur(radius: 50).offset(x: 40, y: -55).opacity(0.26)
-            Circle().fill(Color(red: 0.0, green: 0.48, blue: 1.0)).frame(width: 120, height: 120).blur(radius: 60).offset(x: -110, y: 60).opacity(0.16)
+            LinearGradient(colors: cardGradientColors, startPoint: .topLeading, endPoint: .bottomTrailing)
+            Circle().fill(Color.orange).frame(width: 160, height: 160).blur(radius: 50).offset(x: 40, y: -55)
+                .opacity(colorScheme == .dark ? 0.26 : 0.18)
+            Circle().fill(Color(red: 0.0, green: 0.48, blue: 1.0)).frame(width: 120, height: 120).blur(radius: 60).offset(x: -110, y: 60)
+                .opacity(colorScheme == .dark ? 0.16 : 0.10)
             content()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             VStack {
@@ -563,7 +584,7 @@ struct DashboardView: View {
                     Text("TOTAL REVENUE")
                         .font(.system(size: 9.5, weight: .bold))
                         .tracking(1.8)
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(cardLabelColor)
                     Spacer()
                     rangeTabBar
                 }
@@ -571,11 +592,11 @@ struct DashboardView: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     if vm.isLoading {
-                        RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.1)).frame(width: 180, height: 40)
+                        RoundedRectangle(cornerRadius: 8).fill(cardBarZero).frame(width: 180, height: 40)
                     } else {
                         Text(fmtShort(vm.rangeRevenue))
                             .font(.system(size: 40, weight: .heavy, design: .rounded))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(cardValueColor)
                             .minimumScaleFactor(0.5)
                             .lineLimit(1)
                     }
@@ -586,7 +607,7 @@ struct DashboardView: View {
 
                 Text("vs. prior period")
                     .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.35))
+                    .foregroundStyle(cardSubtleColor)
                     .padding(.top, 2)
 
                 Spacer(minLength: 0)
@@ -627,7 +648,7 @@ struct DashboardView: View {
                 Text("FINANCIAL OVERVIEW")
                     .font(.system(size: 9.5, weight: .bold))
                     .tracking(1.8)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(cardLabelColor)
                     .padding(.bottom, 6)
 
                 // Donut + legend — sized to content, sits tight under label
@@ -650,12 +671,12 @@ struct DashboardView: View {
                         }
                         // Inner hole — diameter = frame × innerRatio (not ×2)
                         Circle()
-                            .fill(Color(red: 0.059, green: 0.090, blue: 0.165))
+                            .fill(cardHoleColor)
                             .frame(width: 204 * 0.52, height: 204 * 0.52)
                         VStack(spacing: 2) {
                             Text("NET")
                                 .font(.system(size: 9, weight: .black))
-                                .foregroundStyle(.white.opacity(0.5))
+                                .foregroundStyle(cardLabelColor)
                                 .tracking(0.5)
                             Text(fmtShort(pl))
                                 .font(.system(size: 15, weight: .black, design: .rounded))
@@ -664,7 +685,7 @@ struct DashboardView: View {
                                 .lineLimit(1)
                             Text(isProfit ? "profit" : "loss")
                                 .font(.system(size: 8.5))
-                                .foregroundStyle(.white.opacity(0.4))
+                                .foregroundStyle(cardSubtleColor)
                         }
                     }
                     .frame(width: 204, height: 204)
@@ -678,11 +699,11 @@ struct DashboardView: View {
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(labels[k])
                                         .font(.system(size: 9, weight: .bold))
-                                        .foregroundStyle(.white.opacity(0.55))
+                                        .foregroundStyle(cardLabelColor)
                                         .textCase(.uppercase)
                                     Text(fmtShort(values[k]))
                                         .font(.system(size: 14, weight: .black, design: .rounded))
-                                        .foregroundStyle(.white)
+                                        .foregroundStyle(cardValueColor)
                                         .minimumScaleFactor(0.65)
                                         .lineLimit(1)
                                 }
@@ -714,20 +735,20 @@ struct DashboardView: View {
                 Text("CASH FLOW · FY")
                     .font(.system(size: 9.5, weight: .bold))
                     .tracking(1.8)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(cardLabelColor)
                     .padding(.bottom, 12)
 
                 // Stats row
                 HStack(spacing: 0) {
                     ForEach([
                         (label: "Money In",  value: vm.revenue,   color: Color.orange),
-                        (label: "Money Out", value: vm.expenses,  color: Color.white.opacity(0.4)),
+                        (label: "Money Out", value: vm.expenses,  color: cardSubtleColor),
                         (label: "Net",       value: abs(net),     color: netColor),
                     ], id: \.label) { stat in
                         VStack(alignment: .leading, spacing: 2) {
                             Text(stat.label)
                                 .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(.white.opacity(0.45))
+                                .foregroundStyle(cardLabelColor)
                             Text(fmtShort(stat.value))
                                 .font(.system(size: 16, weight: .heavy, design: .rounded))
                                 .foregroundStyle(stat.color)
@@ -761,13 +782,11 @@ struct DashboardView: View {
                 } label: {
                     Text(key)
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(vm.range == key ? .black : .white.opacity(0.55))
+                        .foregroundStyle(vm.range == key ? rangeTabActiveText : rangeTabInactiveText)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 5)
                         .background(
-                            vm.range == key
-                                ? Color.white.opacity(0.92)
-                                : Color.white.opacity(0.08),
+                            vm.range == key ? rangeTabActiveBg : rangeTabInactiveBg,
                             in: RoundedRectangle(cornerRadius: 6)
                         )
                 }
@@ -792,14 +811,12 @@ struct DashboardView: View {
                          maxVal: Double, maxH: CGFloat, tint: Color) -> some View {
         let pct:  CGFloat = item.value > 0 ? CGFloat(item.value / maxVal) : 0
         let barH: CGFloat = item.value > 0 ? max(3, pct * maxH) : 2
-        let bg: Color     = item.value == 0
-            ? .white.opacity(0.05)
-            : item.isCurrent ? tint : .white.opacity(0.22)
+        let bg: Color     = item.value == 0 ? cardBarZero : (item.isCurrent ? tint : cardBarRest)
         return VStack(spacing: 4) {
             Capsule().fill(bg).frame(height: barH)
             Text(item.label)
                 .font(.system(size: 7.5, weight: item.isCurrent ? .bold : .regular))
-                .foregroundStyle(item.isCurrent ? tint : .white.opacity(0.3))
+                .foregroundStyle(item.isCurrent ? tint : cardBarLabel)
                 .fixedSize()
         }
         .frame(maxWidth: .infinity, alignment: .bottom)
@@ -845,19 +862,14 @@ struct DashboardView: View {
         let items = vm.upcomingExpenses
         return VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .topTrailing) {
-                LinearGradient(
-                    colors: colorScheme == .dark
-                        ? [Color(red: 0.10, green: 0.11, blue: 0.15), Color(red: 0.17, green: 0.19, blue: 0.26)]
-                        : [Color(red: 0.059, green: 0.090, blue: 0.165), Color(red: 0.118, green: 0.176, blue: 0.294)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                )
+                LinearGradient(colors: cardGradientColors, startPoint: .topLeading, endPoint: .bottomTrailing)
 
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Text("UPCOMING · EXPENSES")
                             .font(.system(size: 9.5, weight: .bold))
                             .tracking(1.5)
-                            .foregroundStyle(.white.opacity(0.5))
+                            .foregroundStyle(cardLabelColor)
                         Spacer()
                         Text("VIEW ALL →")
                             .font(.system(size: 10, weight: .bold))
@@ -869,11 +881,11 @@ struct DashboardView: View {
                     if items.isEmpty {
                         Text("No upcoming expenses")
                             .font(.system(size: 13))
-                            .foregroundStyle(.white.opacity(0.4))
+                            .foregroundStyle(cardSubtleColor)
                             .padding(.vertical, 12)
                     } else {
                         ForEach(Array(items.prefix(6).enumerated()), id: \.element.id) { idx, item in
-                            if idx > 0 { Divider().background(Color.white.opacity(0.08)) }
+                            if idx > 0 { Divider().overlay(cardDivider) }
                             let badgeColor: Color = {
                                 switch item.badge {
                                 case "OVERDUE", "EXPIRED": return Color(red: 0.94, green: 0.27, blue: 0.27)
@@ -885,7 +897,7 @@ struct DashboardView: View {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(item.name)
                                         .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(.white)
+                                        .foregroundStyle(cardValueColor)
                                         .lineLimit(1)
                                     HStack(spacing: 6) {
                                         Text(item.badge)
@@ -896,14 +908,14 @@ struct DashboardView: View {
                                         if let d = item.dueDate {
                                             Text(fmtDueDate(d))
                                                 .font(.system(size: 10))
-                                                .foregroundStyle(.white.opacity(0.4))
+                                                .foregroundStyle(cardSubtleColor)
                                         }
                                     }
                                 }
                                 Spacer()
                                 Text(fmtShort(item.amount))
                                     .font(.system(size: 13, weight: .bold, design: .rounded))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(cardValueColor)
                             }
                             .padding(.vertical, 10)
                         }
@@ -928,21 +940,14 @@ struct DashboardView: View {
             if !vm.domainItems.isEmpty {
                 VStack(alignment: .leading, spacing: 0) {
                     ZStack(alignment: .topTrailing) {
-                        LinearGradient(
-                            colors: colorScheme == .dark
-                                ? [Color(red: 0.10, green: 0.11, blue: 0.15),
-                                   Color(red: 0.17, green: 0.19, blue: 0.26)]
-                                : [Color(red: 0.059, green: 0.090, blue: 0.165),
-                                   Color(red: 0.118, green: 0.176, blue: 0.294)],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        )
+                        LinearGradient(colors: cardGradientColors, startPoint: .topLeading, endPoint: .bottomTrailing)
 
                         VStack(alignment: .leading, spacing: 0) {
                             HStack {
                                 Text("DOMAIN RENEWALS")
                                     .font(.system(size: 9.5, weight: .bold))
                                     .tracking(1.5)
-                                    .foregroundStyle(.white.opacity(0.5))
+                                    .foregroundStyle(cardLabelColor)
                                 Spacer()
                                 Text("MANAGE →")
                                     .font(.system(size: 10, weight: .bold))
@@ -953,7 +958,7 @@ struct DashboardView: View {
 
                             ForEach(Array(vm.domainItems.enumerated()), id: \.element.id) { idx, domain in
                                 if idx > 0 {
-                                    Divider().background(Color.white.opacity(0.08))
+                                    Divider().overlay(cardDivider)
                                 }
                                 HStack(spacing: 12) {
                                     Image(systemName: "network")
@@ -966,16 +971,16 @@ struct DashboardView: View {
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(domain.name)
                                             .font(.system(size: 13, weight: .semibold))
-                                            .foregroundStyle(.white)
+                                            .foregroundStyle(cardValueColor)
                                             .lineLimit(1)
                                         if let expiry = domain.expiryDate {
                                             Text("Renews \(expiry, style: .date)")
                                                 .font(.system(size: 10))
-                                                .foregroundStyle(.white.opacity(0.4))
+                                                .foregroundStyle(cardSubtleColor)
                                         } else {
                                             Text("Annual renewal")
                                                 .font(.system(size: 10))
-                                                .foregroundStyle(.white.opacity(0.4))
+                                                .foregroundStyle(cardSubtleColor)
                                         }
                                     }
                                     Spacer()
@@ -986,7 +991,7 @@ struct DashboardView: View {
                                                 .foregroundStyle(domain.urgencyColor)
                                             Text(days <= 0 ? "" : "left")
                                                 .font(.system(size: 8, weight: .medium))
-                                                .foregroundStyle(.white.opacity(0.3))
+                                                .foregroundStyle(cardSubtleColor)
                                         }
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 6)
