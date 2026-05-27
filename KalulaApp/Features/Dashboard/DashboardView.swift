@@ -522,7 +522,7 @@ struct DashboardView: View {
                         // Inner hole — diameter = frame × innerRatio (not ×2)
                         Circle()
                             .fill(Color(red: 0.059, green: 0.090, blue: 0.165))
-                            .frame(width: 170 * 0.52, height: 170 * 0.52)
+                            .frame(width: 204 * 0.52, height: 204 * 0.52)
                         VStack(spacing: 2) {
                             Text("NET")
                                 .font(.system(size: 9, weight: .black))
@@ -538,7 +538,8 @@ struct DashboardView: View {
                                 .foregroundStyle(.white.opacity(0.4))
                         }
                     }
-                    .frame(width: 170, height: 170)
+                    .frame(width: 204, height: 204)
+                    .offset(y: 2)
 
                     // Legend
                     VStack(alignment: .leading, spacing: 10) {
