@@ -262,6 +262,7 @@ struct Invoice: Codable, Identifiable, Hashable {
     let tax: Double
     let total: Double
     let dueDate: String?
+    let paidAt: String?
     let createdAt: String
     let contact: QuoteContact?
     var lineItems: [LineItem]
@@ -277,6 +278,7 @@ struct Invoice: Codable, Identifiable, Hashable {
         tax         = (try? c.decode(Double.self,      forKey: .tax))        ?? 0
         total       = (try? c.decode(Double.self,      forKey: .total))      ?? 0
         dueDate     = try? c.decode(String.self,       forKey: .dueDate)
+        paidAt      = try? c.decode(String.self,       forKey: .paidAt)
         createdAt   = (try? c.decode(String.self,      forKey: .createdAt))  ?? ""
         contact     = try? c.decode(QuoteContact.self, forKey: .contact)
         lineItems   = (try? c.decode([LineItem].self,  forKey: .lineItems))  ?? []

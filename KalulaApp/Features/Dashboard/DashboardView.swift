@@ -292,7 +292,8 @@ final class DashboardViewModel: ObservableObject {
             let label     = String(df.string(from: date).prefix(3))
             let isCurrent = month == currentMonth && year == currentYear
             let val: Double = paidInvoices.reduce(0) { sum, inv in
-                guard let d = parseDate(inv.createdAt) else { return sum }
+                // Use paidAt when present so backdated payments land in the right month
+                guard let d = parseDate(inv.paidAt ?? inv.createdAt) else { return sum }
                 let m = cal.component(.month, from: d)
                 let y = cal.component(.year,  from: d)
                 return (m == month && y == year) ? sum + inv.total : sum
@@ -658,21 +659,23 @@ struct DashboardView: View {
                     // behaves like a physical slab: visible only at the exposed edges,
                     // hidden where the next overlapping segment covers it.
                     // k=0 drawn first (back), k=2 drawn last (front/top).
+                    // Inner ratios give tiered thickness: Revenue=thin, Expenses=medium, Profit=thick
+                    let innerRatios: [CGFloat] = [0.76, 0.63, 0.47]
                     ZStack {
                         ForEach(0..<3, id: \.self) { k in
                             DonutSegment(
                                 startFraction: st[k],
                                 endFraction:   en[k],
-                                innerRatio: 0.52,
+                                innerRatio: innerRatios[k],
                                 outerRatio: 0.97
                             )
                             .fill(colors[k])
                             .shadow(color: .black.opacity(0.55), radius: 6, x: 0, y: 4)
                         }
-                        // Inner hole — diameter = frame × innerRatio (not ×2)
+                        // Hole covers the innermost edge (= profit ring's inner radius)
                         Circle()
                             .fill(cardHoleColor)
-                            .frame(width: 204 * 0.52, height: 204 * 0.52)
+                            .frame(width: 204 * 0.47, height: 204 * 0.47)
                         VStack(spacing: 2) {
                             Text("NET")
                                 .font(.system(size: 9, weight: .black))
