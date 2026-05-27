@@ -47,11 +47,36 @@ private struct DashboardSummary: Decodable {
 }
 
 private struct DomainsListResponse: Decodable {
-    struct DomainItem: Decodable { let id: String }
+    struct DomainItem: Decodable {
+        let id: String
+        let domainName: String?
+        let expiryDate: String?
+    }
     let domains: [DomainItem]?
 }
 
 private struct UserListItem: Decodable { let id: String }
+
+struct DomainRenewal: Identifiable {
+    let id: String
+    let name: String
+    let expiryDate: Date?
+
+    var daysLeft: Int? {
+        guard let d = expiryDate else { return nil }
+        let cal = Calendar.current
+        return cal.dateComponents([.day],
+                                  from: cal.startOfDay(for: Date()),
+                                  to:   cal.startOfDay(for: d)).day
+    }
+
+    var urgencyColor: Color {
+        guard let days = daysLeft else { return .secondary }
+        if days <= 14 { return Color(red: 0.94, green: 0.27, blue: 0.27) }
+        if days <= 60 { return Color(red: 0.95, green: 0.62, blue: 0.04) }
+        return Color(red: 0.13, green: 0.70, blue: 0.35)
+    }
+}
 
 // MARK: - View Model
 
@@ -70,6 +95,7 @@ final class DashboardViewModel: ObservableObject {
     @Published var messageCount: Int = 0
     @Published var callCount:    Int = 0
     @Published var domainCount:  Int = 0
+    @Published var domainItems:  [DomainRenewal] = []
     @Published var userCount:    Int = 0
 
     // ── Shared ISO parsers ───────────────────────────────────────────────────
@@ -226,7 +252,12 @@ final class DashboardViewModel: ObservableObject {
         ticketCount  = sum?.stats?.openTickets ?? 0
         messageCount = sum?.stats?.messages    ?? 0
         callCount    = sum?.stats?.calls       ?? 0
-        domainCount  = dom?.domains?.count     ?? 0
+        domainCount  = dom?.domains?.count ?? 0
+        domainItems  = (dom?.domains ?? []).map { item in
+            DomainRenewal(id: item.id,
+                          name: item.domainName ?? item.id,
+                          expiryDate: item.expiryDate.flatMap { parseDate($0) })
+        }
         userCount    = usr.count
         isLoading = false
     }
@@ -258,6 +289,9 @@ struct DashboardView: View {
                     .padding(.top, 12)
 
                 upcomingBillsSection
+                    .padding(.top, 12)
+
+                domainRenewalsSection
                     .padding(.top, 12)
 
                 modulesSection
@@ -331,8 +365,8 @@ struct DashboardView: View {
 
     private var swipeableHeroCards: some View {
         TabView {
-            revenueCard.tag(0)
-            financialOverviewCard.tag(1)
+            financialOverviewCard.tag(0)
+            revenueCard.tag(1)
             cashFlowCard.tag(2)
         }
         .tabViewStyle(.page(indexDisplayMode: .always))
@@ -415,7 +449,7 @@ struct DashboardView: View {
         let pl       = abs(net)
         let isProfit = net >= 0
         let plColor  = isProfit ? Color(red: 0.06, green: 0.73, blue: 0.51) : Color(red: 0.94, green: 0.27, blue: 0.27)
-        let colors:  [Color]  = [Color.orange, Color(red: 0.94, green: 0.27, blue: 0.27), plColor]
+        let colors:  [Color]  = [Color.orange, Color(red: 0.56, green: 0.56, blue: 0.58), plColor]
         let labels:  [String] = ["Revenue", "Expenses", isProfit ? "Profit" : "Loss"]
         let values:  [Double] = [rev, exp, pl]
         let total   = rev + exp + pl
@@ -436,8 +470,22 @@ struct DashboardView: View {
                     .padding(.bottom, 16)
 
                 HStack(alignment: .center, spacing: 16) {
-                    // Donut
+                    // Donut (3-D coin effect)
                     ZStack {
+                        // Depth / extrusion layer — same rings, shifted down
+                        ZStack {
+                            ForEach(0..<3, id: \.self) { k in
+                                Circle()
+                                    .trim(from: st[k], to: max(en[k], st[k] + 0.001))
+                                    .stroke(colors[k].opacity(0.35),
+                                            style: StrokeStyle(lineWidth: 30, lineCap: .butt))
+                                    .rotationEffect(.degrees(-90))
+                                    .padding(15)
+                            }
+                        }
+                        .offset(y: 6)
+
+                        // Main rings (face of the coin)
                         ForEach(0..<3, id: \.self) { k in
                             Circle()
                                 .trim(from: st[k], to: max(en[k], st[k] + 0.001))
@@ -462,6 +510,7 @@ struct DashboardView: View {
                         }
                     }
                     .frame(width: 130, height: 130)
+                    .shadow(color: .black.opacity(0.4), radius: 14, y: 7)
 
                     // Legend
                     VStack(alignment: .leading, spacing: 10) {
@@ -707,6 +756,97 @@ struct DashboardView: View {
     }
 
     // financialOverviewCard and cashFlowCard are now inside swipeableHeroCards (TabView pager)
+
+    // MARK: - Domain Renewals
+
+    private var domainRenewalsSection: some View {
+        Group {
+            if !vm.domainItems.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    ZStack(alignment: .topTrailing) {
+                        LinearGradient(
+                            colors: colorScheme == .dark
+                                ? [Color(red: 0.10, green: 0.11, blue: 0.15),
+                                   Color(red: 0.17, green: 0.19, blue: 0.26)]
+                                : [Color(red: 0.059, green: 0.090, blue: 0.165),
+                                   Color(red: 0.118, green: 0.176, blue: 0.294)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack {
+                                Text("DOMAIN RENEWALS")
+                                    .font(.system(size: 9.5, weight: .bold))
+                                    .tracking(1.5)
+                                    .foregroundStyle(.white.opacity(0.5))
+                                Spacer()
+                                Text("MANAGE →")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .tracking(1)
+                                    .foregroundStyle(Color.orange)
+                            }
+                            .padding(.bottom, 14)
+
+                            ForEach(Array(vm.domainItems.enumerated()), id: \.element.id) { idx, domain in
+                                if idx > 0 {
+                                    Divider().background(Color.white.opacity(0.08))
+                                }
+                                HStack(spacing: 12) {
+                                    Image(systemName: "network")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(Color.orange)
+                                        .frame(width: 30, height: 30)
+                                        .background(Color.orange.opacity(0.14),
+                                                    in: RoundedRectangle(cornerRadius: 8))
+
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(domain.name)
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundStyle(.white)
+                                            .lineLimit(1)
+                                        if let expiry = domain.expiryDate {
+                                            Text("Renews \(expiry, style: .date)")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(.white.opacity(0.4))
+                                        } else {
+                                            Text("Annual renewal")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(.white.opacity(0.4))
+                                        }
+                                    }
+                                    Spacer()
+                                    if let days = domain.daysLeft {
+                                        VStack(alignment: .trailing, spacing: 1) {
+                                            Text(days <= 0 ? "EXPIRED" : "\(days)d")
+                                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                                .foregroundStyle(domain.urgencyColor)
+                                            Text(days <= 0 ? "" : "left")
+                                                .font(.system(size: 8, weight: .medium))
+                                                .foregroundStyle(.white.opacity(0.3))
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(domain.urgencyColor.opacity(0.18), in: Capsule())
+                                    }
+                                }
+                                .padding(.vertical, 10)
+                            }
+                        }
+                        .padding(20)
+                    }
+                    // Accent line
+                    LinearGradient(
+                        colors: [.orange, .orange.opacity(0)],
+                        startPoint: .leading, endPoint: .trailing
+                    )
+                    .frame(height: 3)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 22))
+                .shadow(color: .black.opacity(0.18), radius: 14, y: 5)
+                .padding(.horizontal, 16)
+            }
+        }
+    }
 
     // MARK: - Workspace Modules
 
