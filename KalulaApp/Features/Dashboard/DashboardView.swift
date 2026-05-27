@@ -519,10 +519,10 @@ struct DashboardView: View {
                             .fill(colors[k])
                             .shadow(color: .black.opacity(0.55), radius: 6, x: 0, y: 4)
                         }
-                        // Inner hole — matches card background
+                        // Inner hole — diameter = frame × innerRatio (not ×2)
                         Circle()
                             .fill(Color(red: 0.059, green: 0.090, blue: 0.165))
-                            .frame(width: 170 * 0.52 * 2, height: 170 * 0.52 * 2)
+                            .frame(width: 170 * 0.52, height: 170 * 0.52)
                         VStack(spacing: 2) {
                             Text("NET")
                                 .font(.system(size: 9, weight: .black))
