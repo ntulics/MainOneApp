@@ -425,6 +425,21 @@ final class DashboardViewModel: ObservableObject {
                      .map { (name: $0.key, initials: initMap[$0.key] ?? "?", ltv: $0.value) }
     }
 
+    // ── Top expenses by amount ───────────────────────────────────────────────
+    var topExpenses: [(id: String, name: String, amount: Double, date: Date?)] {
+        expenseItems
+            .sorted { $0.total > $1.total }
+            .prefix(5)
+            .map { e in
+                let name = e.vendor?.name ?? e.description ?? "Expense"
+                let date = e.date.flatMap { parseDate($0) }
+                return (id: e.id, name: name, amount: e.total, date: date)
+            }
+    }
+
+    var upcomingExpenseCount: Int { upcomingExpenses.count }
+    var upcomingExpenseTotal: Double { upcomingExpenses.reduce(0) { $0 + $1.amount } }
+
     // ── Load ─────────────────────────────────────────────────────────────────
     func load() async {
         guard !loaded else { return }
@@ -490,16 +505,16 @@ struct DashboardView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
 
-                upcomingBillsSection
+                topExpensesSection
+                    .padding(.top, 12)
+
+                topCustomersSection
                     .padding(.top, 12)
 
                 domainRenewalsSection
                     .padding(.top, 12)
 
                 modulesSection
-                    .padding(.top, 12)
-
-                topCustomersSection
                     .padding(.top, 12)
                     .padding(.bottom, 32)
             }
@@ -909,7 +924,7 @@ struct DashboardView: View {
         HStack(spacing: 8) {
             statusPill(label: "Outstanding", value: vm.outstanding, count: vm.outstandingCount, color: Color(red: 0.23, green: 0.51, blue: 0.96))
             statusPill(label: "Overdue",     value: vm.overdue,     count: vm.overdueCount,     color: Color(red: 0.94, green: 0.27, blue: 0.27))
-            statusPill(label: "Draft",       value: vm.draft,       count: vm.draftCount,       color: Color(red: 0.96, green: 0.62, blue: 0.04))
+            statusPill(label: "Upcoming",    value: vm.upcomingExpenseTotal, count: vm.upcomingExpenseCount, color: Color(red: 0.96, green: 0.62, blue: 0.04))
         }
     }
 
@@ -937,17 +952,17 @@ struct DashboardView: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
-    // MARK: - Upcoming Expenses (bills + active recurring expenses)
+    // MARK: - Top Expenses
 
-    private var upcomingBillsSection: some View {
-        let items = vm.upcomingExpenses
+    private var topExpensesSection: some View {
+        let items = vm.topExpenses
         return VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .topTrailing) {
                 LinearGradient(colors: cardGradientColors, startPoint: .topLeading, endPoint: .bottomTrailing)
 
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
-                        Text("UPCOMING · EXPENSES")
+                        Text("TOP · EXPENSES")
                             .font(.system(size: 9.5, weight: .bold))
                             .tracking(1.5)
                             .foregroundStyle(cardLabelColor)
@@ -960,37 +975,27 @@ struct DashboardView: View {
                     .padding(.bottom, 14)
 
                     if items.isEmpty {
-                        Text("No upcoming expenses")
+                        Text("No expenses recorded")
                             .font(.system(size: 13))
                             .foregroundStyle(cardSubtleColor)
                             .padding(.vertical, 12)
                     } else {
-                        ForEach(Array(items.prefix(6).enumerated()), id: \.element.id) { idx, item in
+                        ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
                             if idx > 0 { Divider().overlay(cardDivider) }
-                            let badgeColor: Color = {
-                                switch item.badge {
-                                case "OVERDUE", "EXPIRED": return Color(red: 0.94, green: 0.27, blue: 0.27)
-                                case "DOMAIN":             return Color(red: 0.23, green: 0.51, blue: 0.96)
-                                default:                   return Color.orange
-                                }
-                            }()
                             HStack(spacing: 12) {
+                                Text("\(idx + 1)")
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundStyle(cardSubtleColor)
+                                    .frame(width: 16)
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(item.name)
                                         .font(.system(size: 13, weight: .semibold))
                                         .foregroundStyle(cardValueColor)
                                         .lineLimit(1)
-                                    HStack(spacing: 6) {
-                                        Text(item.badge)
-                                            .font(.system(size: 8.5, weight: .bold))
-                                            .foregroundStyle(badgeColor)
-                                            .padding(.horizontal, 6).padding(.vertical, 2)
-                                            .background(badgeColor.opacity(0.18), in: Capsule())
-                                        if let d = item.dueDate {
-                                            Text(fmtDueDate(d))
-                                                .font(.system(size: 10))
-                                                .foregroundStyle(cardSubtleColor)
-                                        }
+                                    if let d = item.date {
+                                        Text(d, format: .dateTime.day().month(.abbreviated).year())
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(cardSubtleColor)
                                     }
                                 }
                                 Spacer()
