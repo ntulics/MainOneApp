@@ -456,12 +456,15 @@ struct DashboardView: View {
         let values:  [Double] = [rev, exp, pl]
         let total   = rev + exp + pl
         let hasSeg  = total > 0
-        let gapF:   Double = 3.0 / 360.0
-        let availF: Double = hasSeg ? 1.0 - gapF * 3 : 1.0
+        // Stacked-card donut: no gaps, each later segment overlaps the previous by ~6°
+        let overlapF: Double = hasSeg ? 6.0 / 360.0 : 0.0
         let fracs   = hasSeg ? [rev/total, exp/total, pl/total] : [1.0/3, 1.0/3, 1.0/3]
-        let spans   = fracs.map { $0 * availF }
-        var st = [Double](repeating: 0, count: 3), en = [Double](repeating: 0, count: 3), run = 0.0
-        for k in 0..<3 { st[k] = run; en[k] = run + spans[k]; run = en[k] + (hasSeg ? gapF : 0) }
+        // Cumulative boundaries (0 → 1)
+        var boundaries = [0.0]
+        for f in fracs { boundaries.append(min(boundaries.last! + f, 1.0)) }
+        // Each segment starts overlapF before its boundary (except k=0), ends at next boundary
+        let st = (0..<3).map { k in k == 0 ? 0.0 : max(0.0, boundaries[k] - overlapF) }
+        let en = (0..<3).map { k in boundaries[k + 1] }
 
         return darkCardShell {
             VStack(alignment: .leading, spacing: 0) {
@@ -472,30 +475,21 @@ struct DashboardView: View {
                     .padding(.bottom, 16)
 
                 HStack(alignment: .center, spacing: 16) {
-                    // Donut (3-D coin effect)
+                    // Stacked-card donut — segments drawn back→front; later = on top
                     ZStack {
-                        // Depth / extrusion layer — same rings, shifted down
-                        ZStack {
-                            ForEach(0..<3, id: \.self) { k in
-                                Circle()
-                                    .trim(from: st[k], to: max(en[k], st[k] + 0.001))
-                                    .stroke(colors[k].opacity(0.35),
-                                            style: StrokeStyle(lineWidth: 30, lineCap: .butt))
-                                    .rotationEffect(.degrees(-90))
-                                    .padding(15)
-                            }
-                        }
-                        .offset(y: 6)
-
-                        // Main rings (face of the coin)
+                        // k=0 (back), k=1 (middle), k=2 (front/top)
                         ForEach(0..<3, id: \.self) { k in
                             Circle()
                                 .trim(from: st[k], to: max(en[k], st[k] + 0.001))
-                                .stroke(colors[k], style: StrokeStyle(lineWidth: 30, lineCap: .butt))
+                                .stroke(colors[k], style: StrokeStyle(lineWidth: 32, lineCap: .butt))
                                 .rotationEffect(.degrees(-90))
                                 .padding(15)
+                                .shadow(color: .black.opacity(0.45), radius: 5, x: 0, y: 4)
                         }
-                        Circle().fill(Color.black.opacity(0.35)).padding(39)
+                        // Inner hole
+                        Circle()
+                            .fill(Color(red: 0.059, green: 0.090, blue: 0.165))
+                            .padding(30)
                         VStack(spacing: 2) {
                             Text("NET")
                                 .font(.system(size: 9, weight: .black))
@@ -512,7 +506,6 @@ struct DashboardView: View {
                         }
                     }
                     .frame(width: 170, height: 170)
-                    .shadow(color: .black.opacity(0.4), radius: 18, y: 9)
 
                     // Legend
                     VStack(alignment: .leading, spacing: 10) {
