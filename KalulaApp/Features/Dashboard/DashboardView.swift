@@ -457,7 +457,7 @@ struct DashboardView: View {
         let total   = rev + exp + pl
         let hasSeg  = total > 0
         // Stacked-card donut: no gaps, each later segment overlaps the previous by ~6°
-        let overlapF: Double = hasSeg ? 6.0 / 360.0 : 0.0
+        let overlapF: Double = hasSeg ? 10.0 / 360.0 : 0.0
         let fracs   = hasSeg ? [rev/total, exp/total, pl/total] : [1.0/3, 1.0/3, 1.0/3]
         // Cumulative boundaries (0 → 1)
         var boundaries = [0.0]
@@ -476,21 +476,40 @@ struct DashboardView: View {
 
                 // Donut + legend — sized to content, sits tight under label
                 HStack(alignment: .center, spacing: 16) {
-                    // Stacked-card donut — segments drawn back→front; later = on top
+                    // Stacked-card donut
+                    // Each segment (k=1, k=2) starts ~10° before its boundary so it
+                    // overlaps and sits ON TOP of the previous segment in z-order.
+                    // A dedicated blurred dark arc drawn at the leading edge of each
+                    // overlapping segment creates the concentrated "card-on-card" seam shadow.
                     ZStack {
-                        // k=0 (back), k=1 (middle), k=2 (front/top)
                         ForEach(0..<3, id: \.self) { k in
-                            Circle()
-                                .trim(from: st[k], to: max(en[k], st[k] + 0.001))
-                                .stroke(colors[k], style: StrokeStyle(lineWidth: 32, lineCap: .butt))
-                                .rotationEffect(.degrees(-90))
-                                .padding(15)
-                                .shadow(color: .black.opacity(0.45), radius: 5, x: 0, y: 4)
+                            ZStack {
+                                // ── Seam shadow arc (only for segments that overlap) ──
+                                // Drawn BEFORE the main segment so it appears underneath it
+                                // but ON TOP of the previous segment — exactly like a cast shadow.
+                                if k > 0 {
+                                    Circle()
+                                        .trim(from: st[k],
+                                              to: min(st[k] + 0.04, en[k]))
+                                        .stroke(Color.black.opacity(0.55),
+                                                style: StrokeStyle(lineWidth: 40, lineCap: .butt))
+                                        .rotationEffect(.degrees(-90))
+                                        .padding(12)
+                                        .blur(radius: 5)
+                                }
+                                // ── Main segment (on top of its own shadow) ──
+                                Circle()
+                                    .trim(from: st[k], to: max(en[k], st[k] + 0.001))
+                                    .stroke(colors[k],
+                                            style: StrokeStyle(lineWidth: 34, lineCap: .butt))
+                                    .rotationEffect(.degrees(-90))
+                                    .padding(15)
+                            }
                         }
-                        // Inner hole
+                        // Inner hole — filled with card background so it reads clean
                         Circle()
                             .fill(Color(red: 0.059, green: 0.090, blue: 0.165))
-                            .padding(30)
+                            .padding(28)
                         VStack(spacing: 2) {
                             Text("NET")
                                 .font(.system(size: 9, weight: .black))
