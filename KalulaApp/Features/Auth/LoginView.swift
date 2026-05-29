@@ -271,11 +271,13 @@ struct LoginView: View {
                 .scaledToFit()
                 .frame(width: 40, height: 40)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .environment(\.colorScheme, .dark)
 
             Image("logo-wordmark")
                 .resizable()
                 .scaledToFit()
                 .frame(height: 22)
+                .environment(\.colorScheme, .dark)
         }
     }
 
@@ -518,6 +520,7 @@ struct MfaView: View {
                 .scaledToFit()
                 .frame(width: 56, height: 56)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .environment(\.colorScheme, .dark)
                 .padding(.bottom, 28)
 
             // Card
