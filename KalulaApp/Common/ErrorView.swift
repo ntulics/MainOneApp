@@ -9,7 +9,7 @@ struct ErrorView: View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 52))
-                .foregroundStyle(.brand)
+                .foregroundStyle(Color.brand)
 
             VStack(spacing: 6) {
                 Text("Something went wrong")

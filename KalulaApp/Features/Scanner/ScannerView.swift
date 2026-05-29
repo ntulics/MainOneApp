@@ -266,7 +266,7 @@ struct TypeOptionRow: View {
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.brand)
+                        .foregroundStyle(Color.brand)
                 }
             }
             .padding(14)

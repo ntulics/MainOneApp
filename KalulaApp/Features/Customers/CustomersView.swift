@@ -343,7 +343,7 @@ struct CustomerDetailPanel: View {
                 )
             Text(contact.displayName).font(.title3.bold())
             if let company = contact.companyName, !company.isEmpty {
-                Text(company).font(.subheadline.bold()).foregroundStyle(.brand)
+                Text(company).font(.subheadline.bold()).foregroundStyle(Color.brand)
             }
             if let status = contact.status {
                 Text(status.capitalized)
@@ -515,7 +515,7 @@ struct ContactRow: View {
                 Text(contact.displayName)
                     .font(.subheadline.bold()).foregroundStyle(.primary)
                 if let company = contact.companyName, !company.isEmpty {
-                    Text(company).font(.caption.bold()).foregroundStyle(.brand).lineLimit(1)
+                    Text(company).font(.caption.bold()).foregroundStyle(Color.brand).lineLimit(1)
                 }
                 Text(contact.email ?? contact.phone ?? "—")
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1)
@@ -787,7 +787,7 @@ struct ContactInfoRow: View {
         Button(action: action) {
             HStack(spacing: 14) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(.brand)
+                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.brand)
                     .frame(width: 36, height: 36)
                     .background(Color.brand.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                 VStack(alignment: .leading, spacing: 2) {

@@ -197,7 +197,7 @@ struct DocumentsView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .background(Color.brand.opacity(0.15), in: Capsule())
-                        .foregroundStyle(.brand)
+                        .foregroundStyle(Color.brand)
                 }
                 Button { Task { await loadAndShowPreview(doc) } } label: {
                     Label("Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
@@ -224,7 +224,7 @@ struct DocumentsView: View {
                     VStack(spacing: 16) {
                         Image(systemName: doc.type.iconName)
                             .font(.system(size: 56))
-                            .foregroundStyle(.brand)
+                            .foregroundStyle(Color.brand)
                         Text("Tap to load preview")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -280,7 +280,7 @@ struct DocumentsView: View {
             } else if let err = vm.errorMessage {
                 VStack(spacing: 12) {
                     Image(systemName: "exclamationmark.triangle")
-                        .font(.largeTitle).foregroundStyle(.brand)
+                        .font(.largeTitle).foregroundStyle(Color.brand)
                     Text(err).font(.subheadline).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                     Button("Retry") { Task { await vm.load() } }
@@ -407,7 +407,7 @@ struct DocumentRow: View {
                         } else {
                             Image(systemName: document.type.iconName)
                                 .font(.title3)
-                                .foregroundStyle(.brand)
+                                .foregroundStyle(Color.brand)
                         }
                     }
 
@@ -451,7 +451,7 @@ struct DocumentRow: View {
                 Button(action: sign) {
                     Image(systemName: "signature")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.brand)
+                        .foregroundStyle(Color.brand)
                         .frame(width: 32, height: 32)
                         .background(Color.brand.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
                 }

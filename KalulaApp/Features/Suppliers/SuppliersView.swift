@@ -428,7 +428,7 @@ struct SupplierDetailPanel: View {
             Spacer()
             Button("Edit") { showEdit = true }
                 .fontWeight(.semibold)
-                .foregroundStyle(.brand)
+                .foregroundStyle(Color.brand)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)

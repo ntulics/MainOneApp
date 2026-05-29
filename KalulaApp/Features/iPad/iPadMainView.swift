@@ -160,7 +160,7 @@ struct iPadSidebarView: View {
             } label: {
                 Image(systemName: "sidebar.left")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(.brand)
+                    .foregroundStyle(Color.brand)
                     .frame(width: 36, height: 36)
                     .background(Color.brand.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
             }

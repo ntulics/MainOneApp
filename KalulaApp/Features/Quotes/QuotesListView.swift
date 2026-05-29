@@ -280,17 +280,17 @@ struct NewQuoteSheet: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(contact.displayName).font(.subheadline.bold())
                                 if let company = contact.companyName, !company.isEmpty {
-                                    Text(company).font(.caption).foregroundStyle(.brand)
+                                    Text(company).font(.caption).foregroundStyle(Color.brand)
                                 }
                             }
                             Spacer()
                             Button("Change") { showContactPicker = true }
-                                .font(.caption.bold()).foregroundStyle(.brand)
+                                .font(.caption.bold()).foregroundStyle(Color.brand)
                         }
                     } else {
                         Button { showContactPicker = true } label: {
                             HStack {
-                                Image(systemName: "person.crop.circle.badge.plus").foregroundStyle(.brand)
+                                Image(systemName: "person.crop.circle.badge.plus").foregroundStyle(Color.brand)
                                 Text("Select a client (optional)").foregroundStyle(.primary)
                                 Spacer()
                                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
@@ -303,11 +303,11 @@ struct NewQuoteSheet: View {
                 Section {
                     Button { showScanner = true } label: {
                         Label("Scan Vendor Quote", systemImage: "doc.text.magnifyingglass")
-                            .frame(maxWidth: .infinity).foregroundStyle(.brand)
+                            .frame(maxWidth: .infinity).foregroundStyle(Color.brand)
                     }
                     Button { showUploadPicker = true } label: {
                         Label("Upload Document", systemImage: "arrow.up.doc")
-                            .frame(maxWidth: .infinity).foregroundStyle(.brand)
+                            .frame(maxWidth: .infinity).foregroundStyle(Color.brand)
                     }
                 } footer: {
                     Text("Scan or upload a vendor quote to auto-fill line items.")
@@ -334,7 +334,7 @@ struct NewQuoteSheet: View {
                         withAnimation { items.append(DraftItem()) }
                     } label: {
                         Label("Add line item", systemImage: "plus.circle")
-                            .foregroundStyle(.brand)
+                            .foregroundStyle(Color.brand)
                     }
                 }
 
@@ -365,7 +365,7 @@ struct NewQuoteSheet: View {
                         Spacer()
                         Text(totalAmount, format: .currency(code: "ZAR"))
                             .fontWeight(.semibold)
-                            .foregroundStyle(.brand)
+                            .foregroundStyle(Color.brand)
                     }
                 }
 

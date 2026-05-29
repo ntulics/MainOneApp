@@ -526,10 +526,10 @@ struct InvoiceDocumentView: View {
                 HStack(spacing: 16) {
                     Text("TOTAL")
                         .font(.system(size: 13, weight: .heavy)).tracking(0.5)
-                        .foregroundStyle(.brand)
+                        .foregroundStyle(Color.brand)
                     Text(total, format: .currency(code: currencyCode))
                         .font(.system(size: 18, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.brand)
+                        .foregroundStyle(Color.brand)
                 }
             }
             .frame(width: 240)
@@ -724,10 +724,10 @@ struct QuoteDocumentView: View {
                 HStack(spacing: 16) {
                     Text("TOTAL")
                         .font(.system(size: 13, weight: .heavy)).tracking(0.5)
-                        .foregroundStyle(.brand)
+                        .foregroundStyle(Color.brand)
                     Text(total, format: .currency(code: currencyCode))
                         .font(.system(size: 18, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.brand)
+                        .foregroundStyle(Color.brand)
                 }
             }
             .frame(width: 240)

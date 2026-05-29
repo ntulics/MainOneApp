@@ -341,7 +341,7 @@ struct NumberFormatSection: View {
             Spacer()
             Text(previewNumber)
                 .font(.system(.subheadline, design: .monospaced).bold())
-                .foregroundStyle(.brand)
+                .foregroundStyle(Color.brand)
         }
 
         TextField("Prefix (e.g. QUO)", text: $format.prefix)

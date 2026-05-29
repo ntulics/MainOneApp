@@ -137,7 +137,7 @@ struct LineItemRow: View {
                     Text("Total").font(.caption2).foregroundStyle(.secondary)
                     Text(item.quantity * item.unitPrice, format: .currency(code: "ZAR"))
                         .font(.subheadline.bold())
-                        .foregroundStyle(.brand)
+                        .foregroundStyle(Color.brand)
                 }
             }
         }

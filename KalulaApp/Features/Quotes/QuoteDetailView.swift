@@ -159,7 +159,7 @@ struct EditQuoteSheet: View {
                     ForEach($items) { $item in DraftLineItemRow(item: $item) }
                         .onDelete { items.remove(atOffsets: $0) }
                     Button { withAnimation { items.append(DraftItem()) } } label: {
-                        Label("Add line item", systemImage: "plus.circle").foregroundStyle(.brand)
+                        Label("Add line item", systemImage: "plus.circle").foregroundStyle(Color.brand)
                     }
                 }
 
@@ -173,7 +173,7 @@ struct EditQuoteSheet: View {
                     HStack { Text("Subtotal"); Spacer(); Text(subtotal, format: .currency(code: "ZAR")).foregroundStyle(.secondary) }
                     HStack { Text("Tax");      Spacer(); Text(tax,      format: .currency(code: "ZAR")).foregroundStyle(.secondary) }
                     HStack { Text("Total").fontWeight(.semibold); Spacer()
-                        Text(totalAmt, format: .currency(code: "ZAR")).fontWeight(.semibold).foregroundStyle(.brand) }
+                        Text(totalAmt, format: .currency(code: "ZAR")).fontWeight(.semibold).foregroundStyle(Color.brand) }
                 }
 
                 Section("Notes") {

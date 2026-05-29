@@ -339,7 +339,7 @@ struct NewInvoiceSheet: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(contact.displayName).font(.subheadline.bold())
                                 if let company = contact.companyName, !company.isEmpty {
-                                    Text(company).font(.caption).foregroundStyle(.brand)
+                                    Text(company).font(.caption).foregroundStyle(Color.brand)
                                 }
                                 if let email = contact.email {
                                     Text(email).font(.caption).foregroundStyle(.secondary)
@@ -348,7 +348,7 @@ struct NewInvoiceSheet: View {
                             Spacer()
                             Button("Change") { showContactPicker = true }
                                 .font(.caption.bold())
-                                .foregroundStyle(.brand)
+                                .foregroundStyle(Color.brand)
                         }
 
                         if !companyContacts.isEmpty {
@@ -367,7 +367,7 @@ struct NewInvoiceSheet: View {
                         Button { showContactPicker = true } label: {
                             HStack {
                                 Image(systemName: "person.crop.circle.badge.plus")
-                                    .foregroundStyle(.brand)
+                                    .foregroundStyle(Color.brand)
                                 Text("Select a client (optional)")
                                     .foregroundStyle(.primary)
                                 Spacer()
@@ -401,7 +401,7 @@ struct NewInvoiceSheet: View {
                         withAnimation { items.append(DraftItem()) }
                     } label: {
                         Label("Add line item", systemImage: "plus.circle")
-                            .foregroundStyle(.brand)
+                            .foregroundStyle(Color.brand)
                     }
                 }
 
@@ -576,7 +576,7 @@ struct ContactPickerSheet: View {
                                             .frame(width: 36, height: 36)
                                         Text(contact.initials)
                                             .font(.system(size: 12, weight: .bold))
-                                            .foregroundStyle(.brand)
+                                            .foregroundStyle(Color.brand)
                                     }
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(contact.displayName).font(.subheadline.bold())
@@ -816,7 +816,7 @@ struct EditInvoiceSheet: View {
                     ForEach($items) { $item in DraftLineItemRow(item: $item) }
                         .onDelete { items.remove(atOffsets: $0) }
                     Button { withAnimation { items.append(DraftItem()) } } label: {
-                        Label("Add line item", systemImage: "plus.circle").foregroundStyle(.brand)
+                        Label("Add line item", systemImage: "plus.circle").foregroundStyle(Color.brand)
                     }
                 }
 

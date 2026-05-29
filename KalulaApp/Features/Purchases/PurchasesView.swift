@@ -525,7 +525,7 @@ struct PurchasesView: View {
         HStack(spacing: 14) {
             Image(systemName: "creditcard.fill")
                 .font(.system(size: 14))
-                .foregroundStyle(.brand)
+                .foregroundStyle(Color.brand)
                 .frame(width: 36, height: 36)
                 .background(Color.brand.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {
@@ -578,7 +578,7 @@ struct PurchasesView: View {
                             .font(.caption2.bold())
                             .padding(.horizontal, 7).padding(.vertical, 2)
                             .background(Color.brand.opacity(0.12), in: Capsule())
-                            .foregroundStyle(.brand)
+                            .foregroundStyle(Color.brand)
                     }
                     Text(item.isActive == true ? "Active" : "Inactive")
                         .font(.caption).foregroundStyle(.secondary)
@@ -968,10 +968,10 @@ private struct ExpenseDetailCard: View {
                     HStack(spacing: 16) {
                         Text("TOTAL")
                             .font(.system(size: 13, weight: .heavy)).tracking(0.5)
-                            .foregroundStyle(.brand)
+                            .foregroundStyle(Color.brand)
                         Text(expense.total, format: .currency(code: "ZAR"))
                             .font(.system(size: 18, weight: .heavy, design: .rounded))
-                            .foregroundStyle(.brand)
+                            .foregroundStyle(Color.brand)
                     }
                 }
                 .frame(width: 240)
@@ -1084,9 +1084,9 @@ private struct RecurringDetailCard: View {
                 Spacer()
                 HStack(spacing: 16) {
                     Text("AMOUNT")
-                        .font(.system(size: 13, weight: .heavy)).tracking(0.5).foregroundStyle(.brand)
+                        .font(.system(size: 13, weight: .heavy)).tracking(0.5).foregroundStyle(Color.brand)
                     Text(item.total, format: .currency(code: "ZAR"))
-                        .font(.system(size: 18, weight: .heavy, design: .rounded)).foregroundStyle(.brand)
+                        .font(.system(size: 18, weight: .heavy, design: .rounded)).foregroundStyle(Color.brand)
                 }
                 .frame(width: 240)
             }

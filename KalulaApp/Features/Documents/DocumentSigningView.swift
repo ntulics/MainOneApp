@@ -40,7 +40,7 @@ struct SignaturePadView: View {
                     canvasView.drawing = PKDrawing()
                     isEmpty = true
                 }
-                .foregroundStyle(.brand)
+                .foregroundStyle(Color.brand)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
@@ -267,7 +267,7 @@ struct DocumentSigningView: View {
             VStack(spacing: 12) {
                 Image(systemName: document.type.iconName)
                     .font(.system(size: 48))
-                    .foregroundStyle(.brand)
+                    .foregroundStyle(Color.brand)
                 Text(document.fileName)
                     .font(.headline)
                 Text("Preview unavailable")

@@ -166,7 +166,7 @@ private struct ImportantDocumentListView: View {
         } else if let err = vm.errorMessage {
             VStack(spacing: 12) {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.largeTitle).foregroundStyle(.brand)
+                    .font(.largeTitle).foregroundStyle(Color.brand)
                 Text(err).font(.subheadline).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                 Button("Retry") { Task { await vm.load() } }
@@ -188,7 +188,7 @@ private struct ImportantDocumentListView: View {
                         .font(.subheadline.bold())
                         .padding(.horizontal, 20).padding(.vertical, 10)
                         .background(Color.brand.opacity(0.15), in: Capsule())
-                        .foregroundStyle(.brand)
+                        .foregroundStyle(Color.brand)
                 }
                 .buttonStyle(.plain)
             }
@@ -230,7 +230,7 @@ private struct ImportantDocumentListView: View {
                         .font(.system(size: 13, weight: .semibold))
                         .padding(.horizontal, 12).padding(.vertical, 6)
                         .background(Color.brand.opacity(0.15), in: Capsule())
-                        .foregroundStyle(.brand)
+                        .foregroundStyle(Color.brand)
                 }
                 Button { Task { await loadPreview(doc) } } label: {
                     Label("Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
@@ -252,7 +252,7 @@ private struct ImportantDocumentListView: View {
                 Button { Task { await loadPreview(doc) } } label: {
                     VStack(spacing: 16) {
                         Image(systemName: doc.type.iconName)
-                            .font(.system(size: 56)).foregroundStyle(.brand)
+                            .font(.system(size: 56)).foregroundStyle(Color.brand)
                         Text("Tap to load preview").font(.subheadline).foregroundStyle(.secondary)
                         Text(doc.fileSizeFormatted).font(.caption).foregroundStyle(.tertiary)
                     }
