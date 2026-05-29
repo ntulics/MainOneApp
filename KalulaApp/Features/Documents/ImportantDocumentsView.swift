@@ -103,7 +103,7 @@ private struct ImportantDocumentListView: View {
                 Button { showUpload = true } label: {
                     Label("Upload", systemImage: "arrow.up.doc")
                 }
-                .tint(.orange)
+                .tint(.brand)
             }
         }
         .fileImporter(
@@ -166,11 +166,11 @@ private struct ImportantDocumentListView: View {
         } else if let err = vm.errorMessage {
             VStack(spacing: 12) {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.largeTitle).foregroundStyle(.orange)
+                    .font(.largeTitle).foregroundStyle(.brand)
                 Text(err).font(.subheadline).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                 Button("Retry") { Task { await vm.load() } }
-                    .buttonStyle(.borderedProminent).tint(.orange)
+                    .buttonStyle(.borderedProminent).tint(.brand)
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -187,8 +187,8 @@ private struct ImportantDocumentListView: View {
                     Label("Upload Document", systemImage: "arrow.up.doc")
                         .font(.subheadline.bold())
                         .padding(.horizontal, 20).padding(.vertical, 10)
-                        .background(Color.orange.opacity(0.15), in: Capsule())
-                        .foregroundStyle(.orange)
+                        .background(Color.brand.opacity(0.15), in: Capsule())
+                        .foregroundStyle(.brand)
                 }
                 .buttonStyle(.plain)
             }
@@ -229,8 +229,8 @@ private struct ImportantDocumentListView: View {
                     Label("Sign", systemImage: "signature")
                         .font(.system(size: 13, weight: .semibold))
                         .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(Color.orange.opacity(0.15), in: Capsule())
-                        .foregroundStyle(.orange)
+                        .background(Color.brand.opacity(0.15), in: Capsule())
+                        .foregroundStyle(.brand)
                 }
                 Button { Task { await loadPreview(doc) } } label: {
                     Label("Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
@@ -252,7 +252,7 @@ private struct ImportantDocumentListView: View {
                 Button { Task { await loadPreview(doc) } } label: {
                     VStack(spacing: 16) {
                         Image(systemName: doc.type.iconName)
-                            .font(.system(size: 56)).foregroundStyle(.orange)
+                            .font(.system(size: 56)).foregroundStyle(.brand)
                         Text("Tap to load preview").font(.subheadline).foregroundStyle(.secondary)
                         Text(doc.fileSizeFormatted).font(.caption).foregroundStyle(.tertiary)
                     }

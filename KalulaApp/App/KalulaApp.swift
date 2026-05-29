@@ -68,7 +68,7 @@ struct MainTabView: View {
                 MoreTabView()
                     .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }
             }
-            .tint(.orange)
+            .tint(.brand)
         }
         .fullScreenCover(isPresented: $appState.showScanner) {
             ScannerView(initialType: appState.scannerType)
@@ -124,7 +124,7 @@ struct MoreTabView: View {
                             }
                             .buttonStyle(.plain)
                             NavigationLink(destination: PreferencesView()) {
-                                MenuTileContent(title: "Preferences", icon: "gearshape.fill", color: .orange)
+                                MenuTileContent(title: "Preferences", icon: "gearshape.fill", color: .brand)
                             }
                             .buttonStyle(.plain)
                             Spacer()
@@ -341,7 +341,7 @@ struct NumberFormatSection: View {
             Spacer()
             Text(previewNumber)
                 .font(.system(.subheadline, design: .monospaced).bold())
-                .foregroundStyle(.orange)
+                .foregroundStyle(.brand)
         }
 
         TextField("Prefix (e.g. QUO)", text: $format.prefix)

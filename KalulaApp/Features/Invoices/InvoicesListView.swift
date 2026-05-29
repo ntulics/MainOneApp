@@ -68,7 +68,7 @@ struct InvoicesListView: View {
                                 FilterChip(
                                     label:      filter.1,
                                     isSelected: vm.filterStatus == filter.0,
-                                    tint:       .orange
+                                    tint:       .brand
                                 ) {
                                     vm.filterStatus = filter.0
                                 }
@@ -256,7 +256,7 @@ struct InvoiceStatusBadge: View {
         case "SENT":     return .blue
         case "PAID":     return .green
         case "OVERDUE":  return .red
-        case "CANCELLED": return .orange
+        case "CANCELLED": return .brandCTA
         default:         return .gray
         }
     }
@@ -339,7 +339,7 @@ struct NewInvoiceSheet: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(contact.displayName).font(.subheadline.bold())
                                 if let company = contact.companyName, !company.isEmpty {
-                                    Text(company).font(.caption).foregroundStyle(.orange)
+                                    Text(company).font(.caption).foregroundStyle(.brand)
                                 }
                                 if let email = contact.email {
                                     Text(email).font(.caption).foregroundStyle(.secondary)
@@ -348,7 +348,7 @@ struct NewInvoiceSheet: View {
                             Spacer()
                             Button("Change") { showContactPicker = true }
                                 .font(.caption.bold())
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(.brand)
                         }
 
                         if !companyContacts.isEmpty {
@@ -361,13 +361,13 @@ struct NewInvoiceSheet: View {
                                         .foregroundStyle(.secondary)
                                 }
                             }
-                            .tint(.orange)
+                            .tint(.brand)
                         }
                     } else {
                         Button { showContactPicker = true } label: {
                             HStack {
                                 Image(systemName: "person.crop.circle.badge.plus")
-                                    .foregroundStyle(.orange)
+                                    .foregroundStyle(.brand)
                                 Text("Select a client (optional)")
                                     .foregroundStyle(.primary)
                                 Spacer()
@@ -401,7 +401,7 @@ struct NewInvoiceSheet: View {
                         withAnimation { items.append(DraftItem()) }
                     } label: {
                         Label("Add line item", systemImage: "plus.circle")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(.brand)
                     }
                 }
 
@@ -572,11 +572,11 @@ struct ContactPickerSheet: View {
                                 HStack(spacing: 12) {
                                     ZStack {
                                         Circle()
-                                            .fill(Color.orange.opacity(0.15))
+                                            .fill(Color.brand.opacity(0.15))
                                             .frame(width: 36, height: 36)
                                         Text(contact.initials)
                                             .font(.system(size: 12, weight: .bold))
-                                            .foregroundStyle(.orange)
+                                            .foregroundStyle(.brand)
                                     }
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(contact.displayName).font(.subheadline.bold())
@@ -816,7 +816,7 @@ struct EditInvoiceSheet: View {
                     ForEach($items) { $item in DraftLineItemRow(item: $item) }
                         .onDelete { items.remove(atOffsets: $0) }
                     Button { withAnimation { items.append(DraftItem()) } } label: {
-                        Label("Add line item", systemImage: "plus.circle").foregroundStyle(.orange)
+                        Label("Add line item", systemImage: "plus.circle").foregroundStyle(.brand)
                     }
                 }
 

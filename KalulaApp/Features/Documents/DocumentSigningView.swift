@@ -40,7 +40,7 @@ struct SignaturePadView: View {
                     canvasView.drawing = PKDrawing()
                     isEmpty = true
                 }
-                .foregroundStyle(.orange)
+                .foregroundStyle(.brand)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
@@ -99,7 +99,7 @@ struct SignaturePadView: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-                    .background(isEmpty ? Color.gray : Color.orange, in: RoundedRectangle(cornerRadius: 14))
+                    .background(isEmpty ? Color.gray : Color.brand, in: RoundedRectangle(cornerRadius: 14))
             }
             .disabled(isEmpty)
             .padding(.horizontal, 20)
@@ -165,7 +165,7 @@ struct DocumentSigningView: View {
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 4)
-                                            .stroke(Color.orange.opacity(0.7), lineWidth: 1)
+                                            .stroke(Color.brand.opacity(0.7), lineWidth: 1)
                                     )
                             }
                         }
@@ -187,7 +187,7 @@ struct DocumentSigningView: View {
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Color.orange, in: RoundedRectangle(cornerRadius: 14))
+                                .background(Color.brand, in: RoundedRectangle(cornerRadius: 14))
                             }
 
                             if signature != nil {
@@ -267,7 +267,7 @@ struct DocumentSigningView: View {
             VStack(spacing: 12) {
                 Image(systemName: document.type.iconName)
                     .font(.system(size: 48))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.brand)
                 Text(document.fileName)
                     .font(.headline)
                 Text("Preview unavailable")

@@ -349,7 +349,7 @@ struct PurchasesView: View {
             Divider().frame(height: 40)
             summaryCell(label: "Total Spent",  value: vm.totalSpent,       color: .primary)
             Divider().frame(height: 40)
-            summaryCell(label: "Recurring/mo", value: vm.monthlyRecurring, color: .orange)
+            summaryCell(label: "Recurring/mo", value: vm.monthlyRecurring, color: .brand)
         }
         .padding(.vertical, 12)
         .background(Color(.secondarySystemGroupedBackground))
@@ -525,9 +525,9 @@ struct PurchasesView: View {
         HStack(spacing: 14) {
             Image(systemName: "creditcard.fill")
                 .font(.system(size: 14))
-                .foregroundStyle(.orange)
+                .foregroundStyle(.brand)
                 .frame(width: 36, height: 36)
-                .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                .background(Color.brand.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {
                 Text(expense.vendor?.name ?? expense.description ?? "Expense")
                     .font(.subheadline.bold()).lineLimit(1)
@@ -563,11 +563,11 @@ struct PurchasesView: View {
         HStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .fill((item.isActive == true ? Color.orange : Color.gray).opacity(0.15))
+                    .fill((item.isActive == true ? Color.brand : Color.gray).opacity(0.15))
                     .frame(width: 40, height: 40)
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(item.isActive == true ? .orange : .secondary)
+                    .foregroundStyle(item.isActive == true ? .brand : .secondary)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.vendor?.name ?? item.description ?? "Recurring")
@@ -577,8 +577,8 @@ struct PurchasesView: View {
                         Text(freq.capitalized)
                             .font(.caption2.bold())
                             .padding(.horizontal, 7).padding(.vertical, 2)
-                            .background(Color.orange.opacity(0.12), in: Capsule())
-                            .foregroundStyle(.orange)
+                            .background(Color.brand.opacity(0.12), in: Capsule())
+                            .foregroundStyle(.brand)
                     }
                     Text(item.isActive == true ? "Active" : "Inactive")
                         .font(.caption).foregroundStyle(.secondary)
@@ -785,14 +785,14 @@ struct PurchasesView: View {
 
     private func billStatusColor(_ s: String) -> Color {
         switch s {
-        case "PAID": return .green; case "OVERDUE": return .red; case "PENDING": return .orange
+        case "PAID": return .green; case "OVERDUE": return .red; case "PENDING": return .brandCTA
         default: return .gray
         }
     }
 
     private func expenseStatusColor(_ s: String) -> Color {
         switch s {
-        case "PAID": return .green; case "OVERDUE": return .red; case "UNPAID": return .orange
+        case "PAID": return .green; case "OVERDUE": return .red; case "UNPAID": return .brandCTA
         default: return .gray
         }
     }
@@ -816,7 +816,7 @@ private struct BillDetailCard: View {
                     .foregroundStyle(.white)
             }
             .padding(.horizontal, 24).padding(.vertical, 18)
-            .background(Color.orange)
+            .background(Color.brand)
 
             // Sub-header
             HStack {
@@ -865,7 +865,7 @@ private struct BillDetailCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            Rectangle().fill(Color.orange.opacity(0.2)).frame(height: 4)
+            Rectangle().fill(Color.brand.opacity(0.2)).frame(height: 4)
         }
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -894,7 +894,7 @@ private struct BillDetailCard: View {
 
     private func billColor(_ s: String) -> Color {
         switch s {
-        case "PAID": return .green; case "OVERDUE": return .red; case "PENDING": return .orange
+        case "PAID": return .green; case "OVERDUE": return .red; case "PENDING": return .brandCTA
         default: return .gray
         }
     }
@@ -918,7 +918,7 @@ private struct ExpenseDetailCard: View {
                     .foregroundStyle(.white)
             }
             .padding(.horizontal, 24).padding(.vertical, 18)
-            .background(Color.orange)
+            .background(Color.brand)
 
             // Sub-header
             HStack {
@@ -968,10 +968,10 @@ private struct ExpenseDetailCard: View {
                     HStack(spacing: 16) {
                         Text("TOTAL")
                             .font(.system(size: 13, weight: .heavy)).tracking(0.5)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(.brand)
                         Text(expense.total, format: .currency(code: "ZAR"))
                             .font(.system(size: 18, weight: .heavy, design: .rounded))
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(.brand)
                     }
                 }
                 .frame(width: 240)
@@ -988,7 +988,7 @@ private struct ExpenseDetailCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            Rectangle().fill(Color.orange.opacity(0.2)).frame(height: 4)
+            Rectangle().fill(Color.brand.opacity(0.2)).frame(height: 4)
         }
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -1012,7 +1012,7 @@ private struct ExpenseDetailCard: View {
 
     private func statusColor(_ s: String) -> Color {
         switch s {
-        case "PAID": return .green; case "OVERDUE": return .red; case "UNPAID": return .orange
+        case "PAID": return .green; case "OVERDUE": return .red; case "UNPAID": return .brandCTA
         default: return .gray
         }
     }
@@ -1035,7 +1035,7 @@ private struct RecurringDetailCard: View {
                     .foregroundStyle(.white)
             }
             .padding(.horizontal, 24).padding(.vertical, 18)
-            .background(Color.orange)
+            .background(Color.brand)
 
             HStack {
                 if let freq = item.frequency {
@@ -1084,15 +1084,15 @@ private struct RecurringDetailCard: View {
                 Spacer()
                 HStack(spacing: 16) {
                     Text("AMOUNT")
-                        .font(.system(size: 13, weight: .heavy)).tracking(0.5).foregroundStyle(.orange)
+                        .font(.system(size: 13, weight: .heavy)).tracking(0.5).foregroundStyle(.brand)
                     Text(item.total, format: .currency(code: "ZAR"))
-                        .font(.system(size: 18, weight: .heavy, design: .rounded)).foregroundStyle(.orange)
+                        .font(.system(size: 18, weight: .heavy, design: .rounded)).foregroundStyle(.brand)
                 }
                 .frame(width: 240)
             }
             .padding(.horizontal, 24).padding(.vertical, 16)
 
-            Rectangle().fill(Color.orange.opacity(0.2)).frame(height: 4)
+            Rectangle().fill(Color.brand.opacity(0.2)).frame(height: 4)
         }
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -1207,7 +1207,7 @@ private struct ExpensePreviewSheet: View {
 
     private func statusColor(_ s: String) -> Color {
         switch s {
-        case "PAID": return .green; case "OVERDUE": return .red; case "UNPAID": return .orange
+        case "PAID": return .green; case "OVERDUE": return .red; case "UNPAID": return .brandCTA
         default: return .gray
         }
     }
@@ -1437,7 +1437,7 @@ private struct EditRecurringSheet: View {
                     Section("Item") { LabeledContent("Name", value: name) }
                 }
                 Section("Schedule") {
-                    Toggle("Active", isOn: $isActive).tint(.orange)
+                    Toggle("Active", isOn: $isActive).tint(.brand)
                     Picker("Frequency", selection: $frequency) {
                         ForEach(frequencies, id: \.self) { Text($0.capitalized).tag($0) }
                     }

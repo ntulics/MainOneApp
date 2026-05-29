@@ -75,7 +75,7 @@ struct iPadSidebarView: View {
 
                 // ── Main ────────────────────────────────────────────────────
                 Section("Main") {
-                    SidebarRow(icon: "house.fill", label: "Dashboard", color: .orange)
+                    SidebarRow(icon: "house.fill", label: "Dashboard", color: .brand)
                         .tag(AppDestination.dashboard)
                 }
 
@@ -87,7 +87,7 @@ struct iPadSidebarView: View {
                         .tag(AppDestination.suppliers)
                     SidebarRow(icon: "doc.text.fill",       label: "Sales",      color: .indigo)
                         .tag(AppDestination.sales)
-                    SidebarRow(icon: "cart.fill",           label: "Purchases",  color: .orange)
+                    SidebarRow(icon: "cart.fill",           label: "Purchases",  color: .brand)
                         .tag(AppDestination.purchases)
                 }
 
@@ -103,7 +103,7 @@ struct iPadSidebarView: View {
                 Section("Settings") {
                     SidebarRow(icon: "building.2.fill", label: "Company",     color: .blue)
                         .tag(AppDestination.companySettings)
-                    SidebarRow(icon: "gearshape.fill",  label: "Preferences", color: .orange)
+                    SidebarRow(icon: "gearshape.fill",  label: "Preferences", color: .brand)
                         .tag(AppDestination.preferences)
                 }
             }
@@ -133,7 +133,7 @@ struct iPadSidebarView: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color.orange)
+                    .fill(Color.brand)
                     .frame(width: 52, height: 52)
                 Text(auth.currentUser?.initials ?? "?")
                     .font(.system(size: 20, weight: .bold))
@@ -160,9 +160,9 @@ struct iPadSidebarView: View {
             } label: {
                 Image(systemName: "sidebar.left")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.brand)
                     .frame(width: 36, height: 36)
-                    .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                    .background(Color.brand.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
             }
             .buttonStyle(.plain)
         }

@@ -58,7 +58,7 @@ struct DocumentViewerView: View {
                         .padding(.horizontal, 24)
                     Button("Try again") { Task { await fetch() } }
                         .buttonStyle(.bordered)
-                        .tint(.orange)
+                        .tint(.brand)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(.systemGroupedBackground))

@@ -531,7 +531,7 @@ struct DashboardView: View {
             // Avatar circle
             ZStack {
                 Circle()
-                    .fill(Color.orange)
+                    .fill(Color.brand)
                     .frame(width: 38, height: 38)
                 Text(auth.currentUser?.initials ?? "?")
                     .font(.system(size: 14, weight: .bold))
@@ -622,7 +622,7 @@ struct DashboardView: View {
     private func darkCardShell<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         ZStack(alignment: .topTrailing) {
             LinearGradient(colors: cardGradientColors, startPoint: .topLeading, endPoint: .bottomTrailing)
-            Circle().fill(Color.orange).frame(width: 160, height: 160).blur(radius: 50).offset(x: 40, y: -55)
+            Circle().fill(Color.brand).frame(width: 160, height: 160).blur(radius: 50).offset(x: 40, y: -55)
                 .opacity(colorScheme == .dark ? 0.26 : 0.18)
             Circle().fill(Color(red: 0.0, green: 0.48, blue: 1.0)).frame(width: 120, height: 120).blur(radius: 60).offset(x: -110, y: 60)
                 .opacity(colorScheme == .dark ? 0.16 : 0.10)
@@ -630,7 +630,7 @@ struct DashboardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             VStack {
                 Spacer()
-                LinearGradient(colors: [.orange, .orange.opacity(0)], startPoint: .leading, endPoint: .trailing)
+                LinearGradient(colors: [.brand, .brand.opacity(0)], startPoint: .leading, endPoint: .trailing)
                     .frame(height: 3)
             }
         }
@@ -663,7 +663,7 @@ struct DashboardView: View {
                     }
                     Text("+12.4%")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.orange)
+                        .foregroundStyle(Color.brand)
                 }
 
                 Text("vs. prior period")
@@ -689,7 +689,7 @@ struct DashboardView: View {
         let pl       = abs(net)
         let isProfit = net >= 0
         let plColor  = isProfit ? Color(red: 0.06, green: 0.73, blue: 0.51) : Color(red: 0.94, green: 0.27, blue: 0.27)
-        let colors:  [Color]  = [Color.orange, Color(red: 0.56, green: 0.56, blue: 0.58), plColor]
+        let colors:  [Color]  = [Color.brand, Color(red: 0.56, green: 0.56, blue: 0.58), plColor]
         let labels:  [String] = ["Revenue", "Expenses", isProfit ? "Profit" : "Loss"]
         let values:  [Double] = [rev, exp, pl]
         let total   = rev + exp + pl
@@ -837,7 +837,7 @@ struct DashboardView: View {
                 // Stats row
                 HStack(spacing: 0) {
                     ForEach([
-                        (label: "Money In",  value: vm.revenue,   color: Color.orange),
+                        (label: "Money In",  value: vm.revenue,   color: Color.brand),
                         (label: "Money Out", value: vm.expenses,  color: cardSubtleColor),
                         (label: "Net",       value: abs(net),     color: netColor),
                     ], id: \.label) { stat in
@@ -896,7 +896,7 @@ struct DashboardView: View {
 
         return HStack(alignment: .bottom, spacing: 3) {
             ForEach(Array(data.enumerated()), id: \.offset) { idx, item in
-                miniBar(item: item, maxVal: maxVal, maxH: 44, tint: .orange)
+                miniBar(item: item, maxVal: maxVal, maxH: 44, tint: .brand)
             }
         }
         .frame(height: 60, alignment: .bottom)
@@ -970,7 +970,7 @@ struct DashboardView: View {
                         Text("VIEW ALL →")
                             .font(.system(size: 10, weight: .bold))
                             .tracking(1)
-                            .foregroundStyle(Color.orange)
+                            .foregroundStyle(Color.brand)
                     }
                     .padding(.bottom, 14)
 
@@ -1009,7 +1009,7 @@ struct DashboardView: View {
                 }
                 .padding(20)
             }
-            LinearGradient(colors: [.orange, .orange.opacity(0)], startPoint: .leading, endPoint: .trailing)
+            LinearGradient(colors: [.brand, .brand.opacity(0)], startPoint: .leading, endPoint: .trailing)
                 .frame(height: 3)
         }
         .clipShape(RoundedRectangle(cornerRadius: 22))
@@ -1038,7 +1038,7 @@ struct DashboardView: View {
                                 Text("MANAGE →")
                                     .font(.system(size: 10, weight: .bold))
                                     .tracking(1)
-                                    .foregroundStyle(Color.orange)
+                                    .foregroundStyle(Color.brand)
                             }
                             .padding(.bottom, 14)
 
@@ -1049,9 +1049,9 @@ struct DashboardView: View {
                                 HStack(spacing: 12) {
                                     Image(systemName: "network")
                                         .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(Color.orange)
+                                        .foregroundStyle(Color.brand)
                                         .frame(width: 30, height: 30)
-                                        .background(Color.orange.opacity(0.14),
+                                        .background(Color.brand.opacity(0.14),
                                                     in: RoundedRectangle(cornerRadius: 8))
 
                                     VStack(alignment: .leading, spacing: 3) {
@@ -1091,7 +1091,7 @@ struct DashboardView: View {
                     }
                     // Accent line
                     LinearGradient(
-                        colors: [.orange, .orange.opacity(0)],
+                        colors: [.brand, .brand.opacity(0)],
                         startPoint: .leading, endPoint: .trailing
                     )
                     .frame(height: 3)
@@ -1137,7 +1137,7 @@ struct DashboardView: View {
                         HStack {
                             Image(systemName: item.icon)
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(Color.orange)
+                                .foregroundStyle(Color.brand)
                             Spacer()
                         }
                         Text(vm.isLoading ? "—" : "\(item.count)")
@@ -1173,7 +1173,7 @@ struct DashboardView: View {
                 Text("CRM →")
                     .font(.system(size: 10, weight: .bold))
                     .tracking(1)
-                    .foregroundStyle(Color.orange)
+                    .foregroundStyle(Color.brand)
             }
             .padding(.bottom, 12)
 
@@ -1198,11 +1198,11 @@ struct DashboardView: View {
                         // Avatar
                         ZStack {
                             Circle()
-                                .fill(Color.orange.opacity(0.15))
+                                .fill(Color.brand.opacity(0.15))
                                 .frame(width: 34, height: 34)
                             Text(c.initials)
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(Color.orange)
+                                .foregroundStyle(Color.brand)
                         }
 
                         Text(c.name)
@@ -1393,7 +1393,7 @@ struct AvatarView: View {
             .font(.caption.bold())
             .foregroundStyle(.white)
             .frame(width: size, height: size)
-            .background(.orange, in: Circle())
+            .background(.brand, in: Circle())
     }
 }
 
@@ -1486,7 +1486,7 @@ struct iPadDashboardView: View {
     private func iCardShell<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         ZStack(alignment: .topTrailing) {
             LinearGradient(colors: iCardGradient, startPoint: .topLeading, endPoint: .bottomTrailing)
-            Circle().fill(Color.orange).frame(width: 160, height: 160).blur(radius: 50).offset(x: 40, y: -55)
+            Circle().fill(Color.brand).frame(width: 160, height: 160).blur(radius: 50).offset(x: 40, y: -55)
                 .opacity(colorScheme == .dark ? 0.26 : 0.18)
             Circle().fill(Color(red: 0.0, green: 0.48, blue: 1.0)).frame(width: 120, height: 120).blur(radius: 60).offset(x: -110, y: 60)
                 .opacity(colorScheme == .dark ? 0.16 : 0.10)
@@ -1494,7 +1494,7 @@ struct iPadDashboardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             VStack {
                 Spacer()
-                LinearGradient(colors: [.orange, .orange.opacity(0)], startPoint: .leading, endPoint: .trailing)
+                LinearGradient(colors: [.brand, .brand.opacity(0)], startPoint: .leading, endPoint: .trailing)
                     .frame(height: 3)
             }
         }
@@ -1551,7 +1551,7 @@ struct iPadDashboardView: View {
         let plColor = isProfit
             ? Color(red: 0.06, green: 0.73, blue: 0.51)
             : Color(red: 0.94, green: 0.27, blue: 0.27)
-        let colors: [Color] = [.orange, Color(red: 0.56, green: 0.56, blue: 0.58), plColor]
+        let colors: [Color] = [.brand, Color(red: 0.56, green: 0.56, blue: 0.58), plColor]
         let labels  = ["Revenue", "Expenses", isProfit ? "Profit" : "Loss"]
         let values: [Double] = [rev, exp, pl]
         let total = rev + exp + pl
@@ -1689,7 +1689,7 @@ struct iPadDashboardView: View {
                     }
                     Text("+12.4%")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.orange)
+                        .foregroundStyle(Color.brand)
                 }
 
                 Text("vs. prior period")
@@ -1701,7 +1701,7 @@ struct iPadDashboardView: View {
 
                 HStack(alignment: .bottom, spacing: 3) {
                     ForEach(Array(data.enumerated()), id: \.offset) { _, item in
-                        iMiniBar(item: item, maxVal: maxVal, maxH: 44, tint: .orange)
+                        iMiniBar(item: item, maxVal: maxVal, maxH: 44, tint: .brand)
                     }
                 }
                 .frame(height: 60, alignment: .bottom)
@@ -1754,7 +1754,7 @@ struct iPadDashboardView: View {
                         Text("VIEW ALL →")
                             .font(.system(size: 10, weight: .bold))
                             .tracking(1)
-                            .foregroundStyle(Color.orange)
+                            .foregroundStyle(Color.brand)
                     }
                     .padding(.bottom, 12)
 
@@ -1814,7 +1814,7 @@ struct iPadDashboardView: View {
                 Text("CRM →")
                     .font(.system(size: 10, weight: .bold))
                     .tracking(1)
-                    .foregroundStyle(Color.orange)
+                    .foregroundStyle(Color.brand)
             }
             .padding(.bottom, 12)
 
@@ -1832,10 +1832,10 @@ struct iPadDashboardView: View {
                             .foregroundStyle(.secondary)
                             .frame(width: 16)
                         ZStack {
-                            Circle().fill(Color.orange.opacity(0.15)).frame(width: 36, height: 36)
+                            Circle().fill(Color.brand.opacity(0.15)).frame(width: 36, height: 36)
                             Text(c.initials)
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(Color.orange)
+                                .foregroundStyle(Color.brand)
                         }
                         Text(c.name)
                             .font(.system(size: 13, weight: .semibold))
@@ -1871,7 +1871,7 @@ struct iPadDashboardView: View {
                     Text("MANAGE →")
                         .font(.system(size: 10, weight: .bold))
                         .tracking(1)
-                        .foregroundStyle(Color.orange)
+                        .foregroundStyle(Color.brand)
                 }
                 .padding(.bottom, 14)
 
@@ -1883,9 +1883,9 @@ struct iPadDashboardView: View {
                         HStack(spacing: 10) {
                             Image(systemName: "network")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(Color.orange)
+                                .foregroundStyle(Color.brand)
                                 .frame(width: 30, height: 30)
-                                .background(Color.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
+                                .background(Color.brand.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(domain.name)
@@ -1956,7 +1956,7 @@ struct iPadDashboardView: View {
                         HStack {
                             Image(systemName: item.icon)
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(Color.orange)
+                                .foregroundStyle(Color.brand)
                             Spacer()
                         }
                         Text(vm.isLoading ? "—" : "\(item.count)")

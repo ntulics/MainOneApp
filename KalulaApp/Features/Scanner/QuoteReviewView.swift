@@ -92,7 +92,7 @@ struct QuoteReviewView: View {
                     onCreateQuote(lineItems)
                 }
                 .fontWeight(.semibold)
-                .tint(.orange)
+                .tint(.brand)
                 .disabled(lineItems.isEmpty)
             }
 
@@ -137,7 +137,7 @@ struct LineItemRow: View {
                     Text("Total").font(.caption2).foregroundStyle(.secondary)
                     Text(item.quantity * item.unitPrice, format: .currency(code: "ZAR"))
                         .font(.subheadline.bold())
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.brand)
                 }
             }
         }

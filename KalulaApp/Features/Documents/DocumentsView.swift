@@ -196,8 +196,8 @@ struct DocumentsView: View {
                         .font(.system(size: 13, weight: .semibold))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.orange.opacity(0.15), in: Capsule())
-                        .foregroundStyle(.orange)
+                        .background(Color.brand.opacity(0.15), in: Capsule())
+                        .foregroundStyle(.brand)
                 }
                 Button { Task { await loadAndShowPreview(doc) } } label: {
                     Label("Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
@@ -224,7 +224,7 @@ struct DocumentsView: View {
                     VStack(spacing: 16) {
                         Image(systemName: doc.type.iconName)
                             .font(.system(size: 56))
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(.brand)
                         Text("Tap to load preview")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -252,12 +252,12 @@ struct DocumentsView: View {
     private var typeFilterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                FilterChip(label: "All", isSelected: vm.selectedType == nil, tint: .orange) {
+                FilterChip(label: "All", isSelected: vm.selectedType == nil, tint: .brand) {
                     vm.selectedType = nil
                     Task { await vm.load() }
                 }
                 ForEach(DocumentType.allCases, id: \.self) { type in
-                    FilterChip(label: type.displayName, isSelected: vm.selectedType == type, tint: .orange) {
+                    FilterChip(label: type.displayName, isSelected: vm.selectedType == type, tint: .brand) {
                         vm.selectedType = type
                         Task { await vm.load() }
                     }
@@ -280,11 +280,11 @@ struct DocumentsView: View {
             } else if let err = vm.errorMessage {
                 VStack(spacing: 12) {
                     Image(systemName: "exclamationmark.triangle")
-                        .font(.largeTitle).foregroundStyle(.orange)
+                        .font(.largeTitle).foregroundStyle(.brand)
                     Text(err).font(.subheadline).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                     Button("Retry") { Task { await vm.load() } }
-                        .buttonStyle(.borderedProminent).tint(.orange)
+                        .buttonStyle(.borderedProminent).tint(.brand)
                 }
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -330,7 +330,7 @@ struct DocumentsView: View {
                 } label: {
                     Label("Scan", systemImage: "camera.viewfinder")
                 }
-                .tint(.orange)
+                .tint(.brand)
             }
         }
 
@@ -338,7 +338,7 @@ struct DocumentsView: View {
             Button { showUploadPicker = true } label: {
                 Label("Upload", systemImage: "arrow.up.doc")
             }
-            .tint(.orange)
+            .tint(.brand)
         }
     }
 
@@ -400,14 +400,14 @@ struct DocumentRow: View {
                 HStack(spacing: 14) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.orange.opacity(0.1))
+                            .fill(Color.brand.opacity(0.1))
                             .frame(width: 40, height: 40)
                         if isLoadingView {
                             ProgressView().scaleEffect(0.75)
                         } else {
                             Image(systemName: document.type.iconName)
                                 .font(.title3)
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(.brand)
                         }
                     }
 
@@ -423,7 +423,7 @@ struct DocumentRow: View {
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(Color.orange.opacity(0.8), in: Capsule())
+                                .background(Color.brand.opacity(0.8), in: Capsule())
 
                             Text(document.formattedDate)
                                 .font(.caption)
@@ -451,9 +451,9 @@ struct DocumentRow: View {
                 Button(action: sign) {
                     Image(systemName: "signature")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.brand)
                         .frame(width: 32, height: 32)
-                        .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                        .background(Color.brand.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
             }

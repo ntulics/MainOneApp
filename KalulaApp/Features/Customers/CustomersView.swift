@@ -343,7 +343,7 @@ struct CustomerDetailPanel: View {
                 )
             Text(contact.displayName).font(.title3.bold())
             if let company = contact.companyName, !company.isEmpty {
-                Text(company).font(.subheadline.bold()).foregroundStyle(.orange)
+                Text(company).font(.subheadline.bold()).foregroundStyle(.brand)
             }
             if let status = contact.status {
                 Text(status.capitalized)
@@ -416,7 +416,7 @@ struct CustomerDetailPanel: View {
     }
 
     private func avatarColor(_ name: String) -> Color {
-        let colors: [Color] = [.orange, .blue, .purple, .green, .pink, .indigo, .teal]
+        let colors: [Color] = [.brand, .blue, .purple, .green, .pink, .indigo, .teal]
         return colors[abs(name.hashValue) % colors.count]
     }
 
@@ -515,7 +515,7 @@ struct ContactRow: View {
                 Text(contact.displayName)
                     .font(.subheadline.bold()).foregroundStyle(.primary)
                 if let company = contact.companyName, !company.isEmpty {
-                    Text(company).font(.caption.bold()).foregroundStyle(.orange).lineLimit(1)
+                    Text(company).font(.caption.bold()).foregroundStyle(.brand).lineLimit(1)
                 }
                 Text(contact.email ?? contact.phone ?? "—")
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1)
@@ -535,7 +535,7 @@ struct ContactRow: View {
     }
 
     private func avatarColor(_ name: String) -> Color {
-        let colors: [Color] = [.orange, .blue, .purple, .green, .pink, .indigo, .teal]
+        let colors: [Color] = [.brand, .blue, .purple, .green, .pink, .indigo, .teal]
         return colors[abs(name.hashValue) % colors.count]
     }
 
@@ -754,7 +754,7 @@ struct CustomerDetailView: View {
     }
 
     private func avatarColor(_ name: String) -> Color {
-        let colors: [Color] = [.orange, .blue, .purple, .green, .pink, .indigo, .teal]
+        let colors: [Color] = [.brand, .blue, .purple, .green, .pink, .indigo, .teal]
         return colors[abs(name.hashValue) % colors.count]
     }
 
@@ -787,9 +787,9 @@ struct ContactInfoRow: View {
         Button(action: action) {
             HStack(spacing: 14) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(.orange)
+                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(.brand)
                     .frame(width: 36, height: 36)
-                    .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                    .background(Color.brand.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label).font(.caption).foregroundStyle(.secondary)
                     Text(value).font(.subheadline).foregroundStyle(.primary)

@@ -214,7 +214,7 @@ struct TypeSelectionView: View {
                             .fontWeight(.semibold)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.orange)
+                    .tint(.brand)
 
                     Button("Rescan", action: onRescan)
                         .foregroundStyle(.secondary)
@@ -248,10 +248,10 @@ struct TypeOptionRow: View {
             HStack(spacing: 16) {
                 Image(systemName: type.iconName)
                     .font(.title3)
-                    .foregroundStyle(isSelected ? .white : .orange)
+                    .foregroundStyle(isSelected ? .white : .brand)
                     .frame(width: 44, height: 44)
                     .background(
-                        isSelected ? Color.orange : Color.orange.opacity(0.1),
+                        isSelected ? Color.brand : Color.brand.opacity(0.1),
                         in: RoundedRectangle(cornerRadius: 10)
                     )
 
@@ -266,17 +266,17 @@ struct TypeOptionRow: View {
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.brand)
                 }
             }
             .padding(14)
             .background(
-                isSelected ? Color.orange.opacity(0.08) : Color(.secondarySystemBackground),
+                isSelected ? Color.brand.opacity(0.08) : Color(.secondarySystemBackground),
                 in: RoundedRectangle(cornerRadius: 14)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(isSelected ? Color.orange : Color.clear, lineWidth: 1.5)
+                    .strokeBorder(isSelected ? Color.brand : Color.clear, lineWidth: 1.5)
             )
         }
         .buttonStyle(.plain)
@@ -342,7 +342,7 @@ struct SuccessView: View {
 
             Button("Done", action: onDone)
                 .buttonStyle(.borderedProminent)
-                .tint(.orange)
+                .tint(.brand)
         }
         .padding()
         .navigationTitle("Success")

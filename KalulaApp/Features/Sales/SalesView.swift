@@ -152,7 +152,7 @@ struct SalesView: View {
             Divider().frame(height: 40)
             summaryCell(label: "Received",    value: vm.totalReceived, color: .green)
             Divider().frame(height: 40)
-            summaryCell(label: "Outstanding", value: vm.outstanding,   color: .orange)
+            summaryCell(label: "Outstanding", value: vm.outstanding,   color: .brand)
         }
         .padding(.vertical, 12)
         .background(Color(.secondarySystemGroupedBackground))
@@ -435,7 +435,7 @@ struct InvoiceDocumentView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 18)
-        .background(Color.orange)
+        .background(Color.brand)
     }
 
     private func docSubHeader<Badge: View>(number: String, @ViewBuilder badge: () -> Badge) -> some View {
@@ -526,10 +526,10 @@ struct InvoiceDocumentView: View {
                 HStack(spacing: 16) {
                     Text("TOTAL")
                         .font(.system(size: 13, weight: .heavy)).tracking(0.5)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.brand)
                     Text(total, format: .currency(code: currencyCode))
                         .font(.system(size: 18, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.brand)
                 }
             }
             .frame(width: 240)
@@ -556,7 +556,7 @@ struct InvoiceDocumentView: View {
     }
 
     private var footerBar: some View {
-        Rectangle().fill(Color.orange.opacity(0.2)).frame(height: 4)
+        Rectangle().fill(Color.brand.opacity(0.2)).frame(height: 4)
     }
 
     private func detailPair(label: String, value: String) -> some View {
@@ -633,7 +633,7 @@ struct QuoteDocumentView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 18)
-        .background(Color.orange)
+        .background(Color.brand)
     }
 
     private func docSubHeader<Badge: View>(number: String, @ViewBuilder badge: () -> Badge) -> some View {
@@ -724,10 +724,10 @@ struct QuoteDocumentView: View {
                 HStack(spacing: 16) {
                     Text("TOTAL")
                         .font(.system(size: 13, weight: .heavy)).tracking(0.5)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.brand)
                     Text(total, format: .currency(code: currencyCode))
                         .font(.system(size: 18, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.brand)
                 }
             }
             .frame(width: 240)
@@ -754,7 +754,7 @@ struct QuoteDocumentView: View {
     }
 
     private var footerBar: some View {
-        Rectangle().fill(Color.orange.opacity(0.2)).frame(height: 4)
+        Rectangle().fill(Color.brand.opacity(0.2)).frame(height: 4)
     }
 
     private func detailPair(label: String, value: String) -> some View {

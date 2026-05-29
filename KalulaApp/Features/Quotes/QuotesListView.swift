@@ -67,7 +67,7 @@ struct QuotesListView: View {
                                 FilterChip(
                                     label:      filter.1,
                                     isSelected: vm.filterStatus == filter.0,
-                                    tint:       .orange
+                                    tint:       .brand
                                 ) {
                                     vm.filterStatus = filter.0
                                 }
@@ -234,7 +234,7 @@ struct StatusBadge: View {
         case "SENT":     return .blue
         case "ACCEPTED": return .green
         case "DECLINED": return .red
-        case "EXPIRED":  return .orange
+        case "EXPIRED":  return .brandCTA
         default:         return .gray
         }
     }
@@ -280,17 +280,17 @@ struct NewQuoteSheet: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(contact.displayName).font(.subheadline.bold())
                                 if let company = contact.companyName, !company.isEmpty {
-                                    Text(company).font(.caption).foregroundStyle(.orange)
+                                    Text(company).font(.caption).foregroundStyle(.brand)
                                 }
                             }
                             Spacer()
                             Button("Change") { showContactPicker = true }
-                                .font(.caption.bold()).foregroundStyle(.orange)
+                                .font(.caption.bold()).foregroundStyle(.brand)
                         }
                     } else {
                         Button { showContactPicker = true } label: {
                             HStack {
-                                Image(systemName: "person.crop.circle.badge.plus").foregroundStyle(.orange)
+                                Image(systemName: "person.crop.circle.badge.plus").foregroundStyle(.brand)
                                 Text("Select a client (optional)").foregroundStyle(.primary)
                                 Spacer()
                                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
@@ -303,11 +303,11 @@ struct NewQuoteSheet: View {
                 Section {
                     Button { showScanner = true } label: {
                         Label("Scan Vendor Quote", systemImage: "doc.text.magnifyingglass")
-                            .frame(maxWidth: .infinity).foregroundStyle(.orange)
+                            .frame(maxWidth: .infinity).foregroundStyle(.brand)
                     }
                     Button { showUploadPicker = true } label: {
                         Label("Upload Document", systemImage: "arrow.up.doc")
-                            .frame(maxWidth: .infinity).foregroundStyle(.orange)
+                            .frame(maxWidth: .infinity).foregroundStyle(.brand)
                     }
                 } footer: {
                     Text("Scan or upload a vendor quote to auto-fill line items.")
@@ -334,7 +334,7 @@ struct NewQuoteSheet: View {
                         withAnimation { items.append(DraftItem()) }
                     } label: {
                         Label("Add line item", systemImage: "plus.circle")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(.brand)
                     }
                 }
 
@@ -365,7 +365,7 @@ struct NewQuoteSheet: View {
                         Spacer()
                         Text(totalAmount, format: .currency(code: "ZAR"))
                             .fontWeight(.semibold)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(.brand)
                     }
                 }
 

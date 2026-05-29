@@ -428,7 +428,7 @@ struct SupplierDetailPanel: View {
             Spacer()
             Button("Edit") { showEdit = true }
                 .fontWeight(.semibold)
-                .foregroundStyle(.orange)
+                .foregroundStyle(.brand)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
@@ -564,7 +564,7 @@ struct SupplierDetailPanel: View {
     }
 
     private func avatarColor(_ name: String) -> Color {
-        let colors: [Color] = [.green, .teal, .blue, .indigo, .orange, .purple, .pink]
+        let colors: [Color] = [.green, .teal, .blue, .indigo, .brand, .purple, .pink]
         return colors[abs(name.hashValue) % colors.count]
     }
 }
@@ -611,7 +611,7 @@ struct SupplierRow: View {
     }
 
     private func avatarColor(_ name: String) -> Color {
-        let colors: [Color] = [.green, .teal, .blue, .indigo, .orange, .purple, .pink]
+        let colors: [Color] = [.green, .teal, .blue, .indigo, .brand, .purple, .pink]
         return colors[abs(name.hashValue) % colors.count]
     }
 }
@@ -1086,7 +1086,7 @@ struct SupplierDetailView: View {
     }
 
     private func avatarColor(_ name: String) -> Color {
-        let colors: [Color] = [.green, .teal, .blue, .indigo, .orange, .purple, .pink]
+        let colors: [Color] = [.green, .teal, .blue, .indigo, .brand, .purple, .pink]
         return colors[abs(name.hashValue) % colors.count]
     }
 }
@@ -1147,7 +1147,7 @@ private struct SupplierExpenseRow: View {
         return DateFormatter.localizedString(from: d, dateStyle: .medium, timeStyle: .none)
     }
     private func statusColor(_ s: String) -> Color {
-        switch s { case "PAID": return .green; case "OVERDUE": return .red; default: return .orange }
+        switch s { case "PAID": return .green; case "OVERDUE": return .red; default: return .brand }
     }
 }
 
