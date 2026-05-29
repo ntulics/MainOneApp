@@ -1,5 +1,6 @@
 import Foundation
 import AuthenticationServices
+import LocalAuthentication
 
 // MARK: - AuthService
 
@@ -10,10 +11,15 @@ final class AuthService: NSObject, ObservableObject {
     /// The production API URL — never configurable by the user.
     static let baseURL = "https://mainone.co.za/v1"
 
-    private let tokenKey = "kalula_jwt"
+    private let tokenKey        = "kalula_jwt"
+    private let biometricEnabledKey = "kalula_biometric_enabled"
 
     @Published var currentUser: KalulaUser?
     @Published var isAuthenticated = false
+
+    // Biometric lock — true when a stored session exists but hasn't been unlocked yet
+    @Published var isBiometricLocked = false
+    @Published var biometricError: String?
 
     // MFA challenge state
     @Published var mfaPending = false
@@ -24,16 +30,78 @@ final class AuthService: NSObject, ObservableObject {
     private var passkeyCompletion: CheckedContinuation<LoginResponse, Error>?
     private var passkeyEmail: String = ""
 
+    // MARK: - Biometric availability
+
+    var biometricType: LABiometryType {
+        let ctx = LAContext()
+        var err: NSError?
+        guard ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &err) else {
+            return .none
+        }
+        return ctx.biometryType
+    }
+
+    var biometricEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: biometricEnabledKey) }
+        set { UserDefaults.standard.set(newValue, forKey: biometricEnabledKey) }
+    }
+
     // MARK: - Session restore
 
     func restoreSession() async {
         guard let token = KeychainHelper.read(tokenKey) else { return }
-        await APIService.shared.setToken(token)
+
+        // If biometrics are enabled, lock the session until the user authenticates
+        if biometricEnabled && biometricType != .none {
+            isBiometricLocked = true
+            return
+        }
+
+        await unlockSession(token: token)
+    }
+
+    /// Called after a successful biometric prompt to fully restore the session.
+    func authenticateWithBiometrics() async {
+        let ctx = LAContext()
+        let reason = "Unlock MainOne to access your workspace"
 
         do {
+            let success = try await ctx.evaluatePolicy(
+                .deviceOwnerAuthenticationWithBiometrics,
+                localizedReason: reason
+            )
+            guard success else { return }
+        } catch {
+            // User cancelled (code -2) — stay locked, no error shown
+            let laError = error as? LAError
+            if laError?.code != .userCancel && laError?.code != .systemCancel {
+                biometricError = error.localizedDescription
+            }
+            return
+        }
+
+        guard let token = KeychainHelper.read(tokenKey) else {
+            isBiometricLocked = false
+            return
+        }
+
+        await unlockSession(token: token)
+    }
+
+    func cancelBiometricLock() {
+        // User chose to sign in with password instead
+        isBiometricLocked = false
+        KeychainHelper.delete(tokenKey)
+    }
+
+    private func unlockSession(token: String) async {
+        await APIService.shared.setToken(token)
+        do {
             let user: KalulaUser = try await APIService.shared.get("/auth/me")
-            currentUser = user
-            isAuthenticated = true
+            currentUser      = user
+            isAuthenticated  = true
+            isBiometricLocked = false
+            biometricError   = nil
         } catch {
             logout()
         }
@@ -133,8 +201,13 @@ final class AuthService: NSObject, ObservableObject {
     private func finaliseSession(token: String, user: KalulaUser) async {
         KeychainHelper.save(token, key: tokenKey)
         await APIService.shared.setToken(token)
-        currentUser    = user
-        isAuthenticated = true
+        currentUser       = user
+        isAuthenticated   = true
+        isBiometricLocked = false
+        // Auto-enable biometrics after first successful login if device supports it
+        if biometricType != .none {
+            biometricEnabled = true
+        }
     }
 
     // MARK: - Logout
