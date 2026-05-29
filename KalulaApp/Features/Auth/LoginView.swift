@@ -29,57 +29,28 @@ private extension Color {
     static let m1Grey      = Color(red: 0.380, green: 0.400, blue: 0.450)
 }
 
-// MARK: - Donut chart helper
+// MARK: - Donut segment shape (exact copy of real dashboard implementation)
 
-private struct DonutSegment {
-    let color: Color
-    let fraction: Double
-}
+private struct MockDonutSegment: Shape {
+    let startFraction: Double
+    let endFraction:   Double
+    let innerRatio:    CGFloat
+    let outerRatio:    CGFloat
 
-/// Replicates the real dashboard donut: thick arcs with coloured glow shadow
-/// and a secondary dark shadow beneath each segment for the 3-D raised effect.
-private struct DonutChart: View {
-    let segments: [DonutSegment]
-    let lineWidth: CGFloat
-
-    var body: some View {
-        GeometryReader { geo in
-            let size = min(geo.size.width, geo.size.height)
-            ZStack {
-                ForEach(Array(segments.enumerated()), id: \.offset) { idx, seg in
-                    let start = segments.prefix(idx).reduce(0) { $0 + $1.fraction }
-                    let gap: Double = 0.008
-                    let from = start + gap
-                    let to   = start + seg.fraction - gap
-
-                    // Depth shadow (dark, offset downward — gives 3-D lift)
-                    Circle()
-                        .trim(from: from, to: to)
-                        .stroke(Color.black.opacity(0.45),
-                                style: StrokeStyle(lineWidth: lineWidth + 4, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .offset(y: 4)
-                        .blur(radius: 4)
-
-                    // Coloured glow halo
-                    Circle()
-                        .trim(from: from, to: to)
-                        .stroke(seg.color.opacity(0.40),
-                                style: StrokeStyle(lineWidth: lineWidth + 6, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .blur(radius: 6)
-
-                    // Main arc
-                    Circle()
-                        .trim(from: from, to: to)
-                        .stroke(seg.color,
-                                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                }
-            }
-            .frame(width: size, height: size)
-            .position(x: geo.size.width / 2, y: geo.size.height / 2)
-        }
+    func path(in rect: CGRect) -> Path {
+        let cx = rect.midX, cy = rect.midY
+        let r  = min(rect.width, rect.height) / 2
+        let ri = r * innerRatio
+        let ro = r * outerRatio
+        let s  = Angle(degrees: startFraction * 360 - 90)
+        let e  = Angle(degrees: endFraction   * 360 - 90)
+        var p  = Path()
+        p.addArc(center: CGPoint(x: cx, y: cy), radius: ro,
+                 startAngle: s, endAngle: e, clockwise: false)
+        p.addArc(center: CGPoint(x: cx, y: cy), radius: ri,
+                 startAngle: e, endAngle: s, clockwise: true)
+        p.closeSubpath()
+        return p
     }
 }
 
@@ -87,109 +58,157 @@ private struct DonutChart: View {
 
 private struct FinancialOverviewCard: View {
 
+    // Same fractions as real dashboard mock data
+    private let fracs:   [Double] = [0.50, 0.19, 0.31]
+    private let colors:  [Color]  = [Color.m1Primary, Color.m1Grey, Color.m1Green]
+    private let outerRatios: [CGFloat] = [0.98, 1.03, 1.01]
+    private let labels:  [String] = ["REVENUE", "EXPENSES", "PROFIT"]
+    private let values:  [String] = ["R1.6M",   "R586k",   "R814k"]
+    private let icons:   [String] = ["icon-revenue-wallet", "icon-expenses-arrow", "icon-profit-up"]
+    private let percents: [Int]   = [50, 19, 31]
+
     var body: some View {
         VStack(spacing: 8) {
 
-            // ── Financial Overview card ────────────────────────────────
-            ZStack(alignment: .bottom) {
-                // Card background
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Color.m1Surface)
+            // ── Card shell — exact copy of real darkCardShell ──────────
+            ZStack(alignment: .topTrailing) {
+                LinearGradient(
+                    colors: [Color(red: 0.09, green: 0.11, blue: 0.17),
+                             Color(red: 0.07, green: 0.08, blue: 0.13)],
+                    startPoint: .topLeading, endPoint: .bottomTrailing
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
 
-                // Blue glow at bottom — matches real dashboard
-                Color.m1Primary.opacity(0.25)
-                    .blur(radius: 40)
-                    .frame(height: 60)
-                    .padding(.horizontal, 40)
-                    .offset(y: 10)
+                // Brand glow top-right
+                Circle().fill(Color.m1Primary)
+                    .frame(width: 160, height: 160).blur(radius: 50)
+                    .offset(x: 40, y: -55).opacity(0.26)
+                // Blue glow bottom-left
+                Circle().fill(Color(red: 0.0, green: 0.48, blue: 1.0))
+                    .frame(width: 120, height: 120).blur(radius: 60)
+                    .offset(x: -110, y: 60).opacity(0.16)
 
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(Color.m1Border, lineWidth: 0.5)
+                // Content
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("FINANCIAL OVERVIEW")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .tracking(1.8)
+                        .foregroundStyle(Color.white.opacity(0.45))
+                        .padding(.bottom, 6)
 
-                VStack(spacing: 0) {
-                    // Header
-                    HStack {
-                        Text("FINANCIAL OVERVIEW")
-                            .font(.system(size: 9, weight: .semibold))
-                            .tracking(1.6)
-                            .foregroundStyle(Color.white.opacity(0.40))
-                        Spacer()
-                        HStack(spacing: 4) {
-                            ForEach(0..<3, id: \.self) { i in
+                    HStack(alignment: .center, spacing: 16) {
+                        // ── Donut (identical to real dashboard) ────────
+                        GeometryReader { proxy in
+                            let size   = min(proxy.size.width, proxy.size.height)
+                            let center = CGPoint(x: proxy.size.width / 2,
+                                                 y: proxy.size.height / 2)
+                            let labelRadius = size * 0.39
+                            var boundaries = [0.0]
+                            for f in fracs { boundaries.append(min(boundaries.last! + f, 1.0)) }
+                            let st = (0..<3).map { boundaries[$0] }
+                            let en = (0..<3).map { boundaries[$0 + 1] }
+
+                            ZStack {
+                                ForEach(0..<3, id: \.self) { k in
+                                    let mid = (st[k] + en[k]) / 2
+                                    let angle = (mid * 360 - 90) * .pi / 180
+                                    let lp = CGPoint(
+                                        x: center.x + CGFloat(cos(angle)) * labelRadius,
+                                        y: center.y + CGFloat(sin(angle)) * labelRadius
+                                    )
+                                    MockDonutSegment(
+                                        startFraction: st[k], endFraction: en[k],
+                                        innerRatio: 0.48, outerRatio: outerRatios[k]
+                                    )
+                                    .fill(colors[k])
+                                    .shadow(color: .black.opacity(0.42), radius: 9, x: 0, y: 6)
+
+                                    Text("\(percents[k])%")
+                                        .font(.system(size: 11, weight: .black, design: .rounded))
+                                        .foregroundStyle(.white)
+                                        .minimumScaleFactor(0.65)
+                                        .lineLimit(1)
+                                        .shadow(color: .black.opacity(0.18), radius: 1, x: 0, y: 1)
+                                        .frame(width: 58, height: 34)
+                                        .position(lp)
+                                }
+
+                                // Centre hole with dual shadow
                                 Circle()
-                                    .fill(i == 0 ? Color.white.opacity(0.85) : Color.white.opacity(0.22))
-                                    .frame(width: 5, height: 5)
+                                    .fill(Color(red: 0.07, green: 0.08, blue: 0.13))
+                                    .frame(width: size * 0.50, height: size * 0.50)
+                                    .shadow(color: .black.opacity(0.78), radius: 14, x: 0, y: 8)
+                                    .shadow(color: .black.opacity(0.34), radius: 4,  x: 0, y: 2)
+
+                                VStack(spacing: 3) {
+                                    Text("NET")
+                                        .font(.system(size: 9, weight: .black))
+                                        .foregroundStyle(Color.white.opacity(0.45))
+                                        .tracking(0.5)
+                                    Text("R814k")
+                                        .font(.system(size: 17, weight: .black, design: .rounded))
+                                        .foregroundStyle(Color.m1Green)
+                                        .minimumScaleFactor(0.6)
+                                        .lineLimit(1)
+                                    Text("profit")
+                                        .font(.system(size: 8.5))
+                                        .foregroundStyle(Color.white.opacity(0.38))
+                                }
                             }
                         }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 14)
-                    .padding(.bottom, 10)
+                        .frame(width: 204, height: 204)
+                        .offset(y: 2)
 
-                    // Donut + legend
-                    HStack(alignment: .center, spacing: 10) {
-
-                        // ── Donut ──────────────────────────────────────
-                        ZStack {
-                            DonutChart(
-                                segments: [
-                                    DonutSegment(color: Color.m1Primary, fraction: 0.50),
-                                    DonutSegment(color: Color.m1Grey,    fraction: 0.19),
-                                    DonutSegment(color: Color.m1Green,   fraction: 0.31),
-                                ],
-                                lineWidth: 30
-                            )
-
-                            // Dark centre fill
-                            Circle()
-                                .fill(Color(red: 0.06, green: 0.07, blue: 0.11))
-                                .frame(width: 96, height: 96)
-
-                            VStack(spacing: 2) {
-                                Text("NET")
-                                    .font(.system(size: 8, weight: .semibold))
-                                    .tracking(1.4)
-                                    .foregroundStyle(Color.white.opacity(0.40))
-                                Text("R814k")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundStyle(Color.m1Green)
-                                Text("profit")
-                                    .font(.system(size: 8))
-                                    .foregroundStyle(Color.white.opacity(0.35))
-                            }
-
-                            // % labels on each arc
-                            percentLabel("50%", angle: -90 + 360 * 0.25,  radius: 84)
-                            percentLabel("19%", angle: -90 + 360 * 0.595, radius: 84)
-                            percentLabel("31%", angle: -90 + 360 * 0.845, radius: 84)
-                        }
-                        .frame(width: 180, height: 180)
-
-                        // ── Legend ─────────────────────────────────────
+                        // ── Legend (identical to real dashboard) ────────
                         VStack(alignment: .leading, spacing: 10) {
-                            legendRow(barColor: Color.m1Primary,
-                                      icon: "icon-revenue-wallet",
-                                      iconColor: Color.m1Primary,
-                                      label: "REVENUE",
-                                      value: "R1.6M", sub: "50% of total")
-                            legendRow(barColor: Color.m1Grey,
-                                      icon: "icon-expenses-arrow",
-                                      iconColor: Color.m1Grey,
-                                      label: "EXPENSES",
-                                      value: "R586k", sub: "19% of total")
-                            legendRow(barColor: Color.m1Green,
-                                      icon: "icon-profit-up",
-                                      iconColor: Color.m1Green,
-                                      label: "PROFIT",
-                                      value: "R814k", sub: "31% of total")
+                            ForEach(0..<3, id: \.self) { k in
+                                HStack(alignment: .center, spacing: 8) {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(colors[k])
+                                        .frame(width: 3, height: 36)
+                                    Image(icons[k])
+                                        .resizable()
+                                        .renderingMode(.template)
+                                        .foregroundStyle(colors[k])
+                                        .frame(width: 28, height: 28)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(labels[k])
+                                            .font(.system(size: 10.5, weight: .bold))
+                                            .foregroundStyle(Color.white.opacity(0.45))
+                                        Text(values[k])
+                                            .font(.system(size: 17, weight: .black, design: .rounded))
+                                            .foregroundStyle(.white)
+                                            .minimumScaleFactor(0.65)
+                                            .lineLimit(1)
+                                        Text("\(percents[k])% of total")
+                                            .font(.system(size: 9, weight: .medium))
+                                            .foregroundStyle(Color.white.opacity(0.38))
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.trailing, 8)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 16)
+
+                    Spacer(minLength: 0)
+                }
+                .padding(20)
+                .frame(maxHeight: .infinity)
+
+                // Bottom brand accent line
+                VStack {
+                    Spacer()
+                    LinearGradient(colors: [Color.m1Primary, Color.m1Primary.opacity(0)],
+                                   startPoint: .leading, endPoint: .trailing)
+                        .frame(height: 3)
+                        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                 }
             }
+            .frame(height: 280)
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(Color.m1Border, lineWidth: 0.5))
 
             // ── Stat cards ─────────────────────────────────────────────
             HStack(spacing: 8) {
@@ -202,53 +221,6 @@ private struct FinancialOverviewCard: View {
                 statCard(dot: Color.m1CTA,
                          label: "UPCOMING",    value: "R95k",
                          valueColor: Color.m1CTA)
-            }
-        }
-    }
-
-    // ── Helpers ────────────────────────────────────────────────────────
-
-    @ViewBuilder
-    private func percentLabel(_ text: String, angle: Double, radius: CGFloat) -> some View {
-        let rad = angle * .pi / 180
-        Text(text)
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundStyle(.white)
-            .offset(x: radius * CGFloat(cos(rad)),
-                    y: radius * CGFloat(sin(rad)))
-    }
-
-    @ViewBuilder
-    private func legendRow(barColor: Color, icon: String, iconColor: Color,
-                            label: String, value: String, sub: String) -> some View {
-        HStack(spacing: 8) {
-            // Coloured vertical bar
-            RoundedRectangle(cornerRadius: 2)
-                .fill(barColor)
-                .frame(width: 3, height: 36)
-
-            // Icon in circle ring (matches real dashboard SVG icons)
-            ZStack {
-                Circle()
-                    .strokeBorder(iconColor.opacity(0.45), lineWidth: 1)
-                    .frame(width: 26, height: 26)
-                Image(icon)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 14, height: 14)
-            }
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(label)
-                    .font(.system(size: 8, weight: .semibold))
-                    .tracking(0.8)
-                    .foregroundStyle(Color.white.opacity(0.40))
-                Text(value)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.white)
-                Text(sub)
-                    .font(.system(size: 8))
-                    .foregroundStyle(Color.white.opacity(0.35))
             }
         }
     }
