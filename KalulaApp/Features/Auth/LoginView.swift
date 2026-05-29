@@ -635,7 +635,7 @@ struct MfaView: View {
 
             Spacer()
         }
-        .background(Color.m1Canvas.ignoresSafeArea())
+        .background(p.canvas.ignoresSafeArea())
     }
 
     private func verify() async {
