@@ -225,10 +225,13 @@ extension AuthService: ASAuthorizationControllerDelegate {
 
 extension AuthService: ASAuthorizationControllerPresentationContextProviding {
     nonisolated func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        // Find the key window at call time — this runs on the main thread implicitly via UIKit
-        let scenes = UIApplication.shared.connectedScenes
-        let windowScene = scenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
-        return windowScene?.windows.first(where: { $0.isKeyWindow }) ?? UIWindow()
+        // ASAuthorizationController always calls this on the main thread, so it's safe to
+        // assume main-actor isolation here. MainActor.assumeIsolated avoids the warning.
+        MainActor.assumeIsolated {
+            let scenes = UIApplication.shared.connectedScenes
+            let windowScene = scenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
+            return windowScene?.windows.first(where: { $0.isKeyWindow }) ?? UIWindow()
+        }
     }
 }
 

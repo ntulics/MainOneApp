@@ -20,7 +20,7 @@ actor APIService {
     static let shared = APIService()
 
     /// Production API base URL — always points to mainone.co.za
-    private let baseURL: String = AuthService.baseURL
+    private let baseURL: String = "https://mainone.co.za/v1"
     private var authToken: String?
 
     func setToken(_ token: String?) { authToken = token }

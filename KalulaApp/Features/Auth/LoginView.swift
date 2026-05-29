@@ -230,8 +230,8 @@ private struct MfaView: View {
                         .background(Color(.secondarySystemBackground))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .padding(.horizontal)
-                        .onChange(of: code) { _, new in
-                            // Auto-submit when 6 digits are entered
+                        .onChange(of: code) { new in
+                            // Auto-submit when 6 digits are entered (iOS 16 compatible)
                             let digits = new.filter(\.isNumber)
                             code = String(digits.prefix(6))
                             if code.count == 6 { Task { await verify() } }
