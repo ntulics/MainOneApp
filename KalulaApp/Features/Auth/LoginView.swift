@@ -59,13 +59,16 @@ private struct MockDonutSegment: Shape {
 private struct FinancialOverviewCard: View {
 
     // Same fractions as real dashboard mock data
-    private let fracs:   [Double] = [0.50, 0.19, 0.31]
-    private let colors:  [Color]  = [Color.m1Primary, Color.m1Grey, Color.m1Green]
+    private let colors:      [Color]   = [Color.m1Primary, Color.m1Grey, Color.m1Green]
     private let outerRatios: [CGFloat] = [0.98, 1.03, 1.01]
-    private let labels:  [String] = ["REVENUE", "EXPENSES", "PROFIT"]
-    private let values:  [String] = ["R1.6M",   "R586k",   "R814k"]
-    private let icons:   [String] = ["icon-revenue-wallet", "icon-expenses-arrow", "icon-profit-up"]
-    private let percents: [Int]   = [50, 19, 31]
+    private let labels:      [String]  = ["REVENUE", "EXPENSES", "PROFIT"]
+    private let values:      [String]  = ["R1.6M",   "R586k",   "R814k"]
+    private let icons:       [String]  = ["icon-revenue-wallet", "icon-expenses-arrow", "icon-profit-up"]
+    private let percents:    [Int]     = [50, 19, 31]
+
+    // Precomputed segment boundaries — avoids control flow inside ViewBuilder
+    private let st: [Double] = [0.00, 0.50, 0.69]   // cumulative start
+    private let en: [Double] = [0.50, 0.69, 1.00]   // cumulative end
 
     var body: some View {
         VStack(spacing: 8) {
@@ -99,14 +102,10 @@ private struct FinancialOverviewCard: View {
                     HStack(alignment: .center, spacing: 16) {
                         // ── Donut (identical to real dashboard) ────────
                         GeometryReader { proxy in
-                            let size   = min(proxy.size.width, proxy.size.height)
-                            let center = CGPoint(x: proxy.size.width / 2,
-                                                 y: proxy.size.height / 2)
+                            let size        = min(proxy.size.width, proxy.size.height)
+                            let center      = CGPoint(x: proxy.size.width / 2,
+                                                      y: proxy.size.height / 2)
                             let labelRadius = size * 0.39
-                            var boundaries = [0.0]
-                            for f in fracs { boundaries.append(min(boundaries.last! + f, 1.0)) }
-                            let st = (0..<3).map { boundaries[$0] }
-                            let en = (0..<3).map { boundaries[$0 + 1] }
 
                             ZStack {
                                 ForEach(0..<3, id: \.self) { k in
