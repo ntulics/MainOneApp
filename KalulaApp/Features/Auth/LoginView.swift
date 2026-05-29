@@ -302,6 +302,7 @@ struct LoginView: View {
 
                 FinancialOverviewCard()
                     .padding(.horizontal, 20)
+                    .environment(\.colorScheme, .dark)
 
                 statusBadge
                     .padding(.top, 20)
@@ -345,8 +346,23 @@ struct LoginView: View {
 
     // MARK: - Form card
 
+    private var biometricIcon: String {
+        auth.biometricType == .faceID ? "faceid" : "touchid"
+    }
+    private var biometricLabel: String {
+        auth.biometricType == .faceID ? "Face ID" : "Touch ID"
+    }
+
     private var formCard: some View {
         VStack(spacing: 0) {
+
+            // ── Biometric quick-login (shown when a saved session exists) ──
+            if auth.hasSavedSession && step == .email {
+                biometricSection
+                    .padding(.top, 20)
+                    .padding(.horizontal, 20)
+            }
+
             VStack(spacing: 4) {
                 Text(step == .email ? "Sign in" : "Enter password")
                     .font(.system(size: 22, weight: .bold))
@@ -358,7 +374,7 @@ struct LoginView: View {
                     .foregroundStyle(p.textSecondary)
                     .lineLimit(1)
             }
-            .padding(.top, 22)
+            .padding(.top, auth.hasSavedSession && step == .email ? 14 : 22)
             .padding(.bottom, 18)
 
             if let err = errorMessage {
@@ -444,6 +460,64 @@ struct LoginView: View {
         .background(p.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
             .strokeBorder(p.border, lineWidth: 0.5))
+    }
+
+    // MARK: - Biometric section
+
+    @State private var biometricLoading = false
+
+    private var biometricSection: some View {
+        VStack(spacing: 12) {
+            // Face ID / Touch ID button
+            Button {
+                Task { await triggerBiometric() }
+            } label: {
+                HStack(spacing: 10) {
+                    if biometricLoading {
+                        ProgressView().tint(.white).scaleEffect(0.85)
+                    } else {
+                        Image(systemName: biometricIcon)
+                            .font(.system(size: 18, weight: .medium))
+                        Text("Sign in with \(biometricLabel)")
+                            .font(.system(size: 15, weight: .semibold))
+                    }
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(
+                    LinearGradient(colors: [Color.m1Primary, Color.m1PrimaryH],
+                                   startPoint: .leading, endPoint: .trailing),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                )
+                .shadow(color: Color.m1Primary.opacity(0.40), radius: 10, x: 0, y: 5)
+            }
+            .disabled(biometricLoading)
+
+            // Biometric error
+            if let err = auth.biometricError {
+                Text(err)
+                    .font(.caption)
+                    .foregroundStyle(Color(red: 0.972, green: 0.427, blue: 0.427))
+                    .multilineTextAlignment(.center)
+            }
+
+            // Divider between biometric and password form
+            HStack(spacing: 10) {
+                Rectangle().fill(p.border).frame(height: 0.5)
+                Text("or sign in with password")
+                    .font(.system(size: 11))
+                    .foregroundStyle(p.textMuted)
+                    .fixedSize()
+                Rectangle().fill(p.border).frame(height: 0.5)
+            }
+        }
+    }
+
+    private func triggerBiometric() async {
+        biometricLoading = true
+        await auth.authenticateWithBiometrics()
+        biometricLoading = false
     }
 
     // MARK: - Footer

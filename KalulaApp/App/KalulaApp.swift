@@ -31,9 +31,7 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if auth.isBiometricLocked {
-                BiometricLockView()
-            } else if auth.isAuthenticated {
+            if auth.isAuthenticated {
                 if UIDevice.current.userInterfaceIdiom == .pad {
                     iPadMainView()
                 } else {
@@ -43,7 +41,6 @@ struct RootView: View {
                 LoginRootView()
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: auth.isBiometricLocked)
         .animation(.easeInOut(duration: 0.25), value: auth.isAuthenticated)
     }
 }

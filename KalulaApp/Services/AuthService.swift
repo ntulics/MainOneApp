@@ -48,31 +48,36 @@ final class AuthService: NSObject, ObservableObject {
 
     // MARK: - Session restore
 
+    /// Called on app launch. Never auto-restores if biometrics are enabled —
+    /// the user must tap the Face ID / Touch ID button on the login screen.
     func restoreSession() async {
         guard let token = KeychainHelper.read(tokenKey) else { return }
 
-        // If biometrics are enabled, lock the session until the user authenticates
-        if biometricEnabled && biometricType != .none {
-            isBiometricLocked = true
-            return
-        }
+        // Biometrics enabled — surface the button on the login page instead
+        if biometricEnabled && biometricType != .none { return }
 
         await unlockSession(token: token)
     }
 
-    /// Called after a successful biometric prompt to fully restore the session.
+    /// True when a stored token exists and biometrics are enabled —
+    /// used by LoginView to decide whether to show the biometric button.
+    var hasSavedSession: Bool {
+        KeychainHelper.read(tokenKey) != nil && biometricEnabled && biometricType != .none
+    }
+
+    /// Triggered by the Face ID / Touch ID button on the login screen.
     func authenticateWithBiometrics() async {
         let ctx = LAContext()
-        let reason = "Unlock MainOne to access your workspace"
+        let reason = "Sign in to MainOne"
+        biometricError = nil
 
         do {
-            let success = try await ctx.evaluatePolicy(
+            let ok = try await ctx.evaluatePolicy(
                 .deviceOwnerAuthenticationWithBiometrics,
                 localizedReason: reason
             )
-            guard success else { return }
+            guard ok else { return }
         } catch {
-            // User cancelled (code -2) — stay locked, no error shown
             let laError = error as? LAError
             if laError?.code != .userCancel && laError?.code != .systemCancel {
                 biometricError = error.localizedDescription
@@ -80,28 +85,18 @@ final class AuthService: NSObject, ObservableObject {
             return
         }
 
-        guard let token = KeychainHelper.read(tokenKey) else {
-            isBiometricLocked = false
-            return
-        }
-
+        guard let token = KeychainHelper.read(tokenKey) else { return }
         await unlockSession(token: token)
-    }
-
-    func cancelBiometricLock() {
-        // User chose to sign in with password instead
-        isBiometricLocked = false
-        KeychainHelper.delete(tokenKey)
     }
 
     private func unlockSession(token: String) async {
         await APIService.shared.setToken(token)
         do {
             let user: KalulaUser = try await APIService.shared.get("/auth/me")
-            currentUser      = user
-            isAuthenticated  = true
+            currentUser       = user
+            isAuthenticated   = true
             isBiometricLocked = false
-            biometricError   = nil
+            biometricError    = nil
         } catch {
             logout()
         }
