@@ -4,29 +4,53 @@ import SwiftUI
 
 private enum LoginStep { case email, password }
 
-// MARK: - Brand tokens
+// MARK: - Brand tokens (fixed, scheme-independent)
 
 private extension Color {
-    /// Primary blue    #1366EF
-    static let m1Primary   = Color(red: 0.075, green: 0.400, blue: 0.937)
-    /// Blue hover      #0F56DE
-    static let m1PrimaryH  = Color(red: 0.059, green: 0.337, blue: 0.871)
-    /// CTA amber       #FFB400
-    static let m1CTA       = Color(red: 1.000, green: 0.706, blue: 0.000)
-    /// Dark canvas     #0D0F18
-    static let m1Canvas    = Color(red: 0.051, green: 0.059, blue: 0.094)
-    /// Dark surface    #151821
-    static let m1Surface   = Color(red: 0.082, green: 0.094, blue: 0.129)
-    /// Dark surface 2  #1C202E
-    static let m1Surface2  = Color(red: 0.110, green: 0.125, blue: 0.180)
-    /// Border          #2A2F42
-    static let m1Border    = Color(red: 0.165, green: 0.184, blue: 0.259)
-    /// Revenue orange  #F59E0B
-    static let m1Orange    = Color(red: 0.961, green: 0.620, blue: 0.043)
-    /// Profit green    #22C55E
-    static let m1Green     = Color(red: 0.133, green: 0.773, blue: 0.369)
-    /// Expenses grey
+    static let m1Primary   = Color(red: 0.075, green: 0.400, blue: 0.937)  // #1366EF
+    static let m1PrimaryH  = Color(red: 0.059, green: 0.337, blue: 0.871)  // #0F56DE
+    static let m1CTA       = Color(red: 1.000, green: 0.706, blue: 0.000)  // #FFB400
+    static let m1Orange    = Color(red: 0.961, green: 0.620, blue: 0.043)  // #F59E0B
+    static let m1Green     = Color(red: 0.133, green: 0.773, blue: 0.369)  // #22C55E
     static let m1Grey      = Color(red: 0.380, green: 0.400, blue: 0.450)
+}
+
+// MARK: - Adaptive palette (switches with system color scheme)
+
+private struct LoginPalette {
+    let colorScheme: ColorScheme
+
+    // Page canvas
+    var canvas:   Color { colorScheme == .dark
+        ? Color(red: 0.051, green: 0.059, blue: 0.094)   // #0D0F18
+        : Color(red: 0.949, green: 0.953, blue: 0.973) } // #F2F3F8
+
+    // Card surface
+    var surface:  Color { colorScheme == .dark
+        ? Color(red: 0.082, green: 0.094, blue: 0.129)   // #151821
+        : Color.white }
+
+    // Secondary surface (passkey btn bg, badge bg)
+    var surface2: Color { colorScheme == .dark
+        ? Color(red: 0.110, green: 0.125, blue: 0.180)   // #1C202E
+        : Color(red: 0.929, green: 0.937, blue: 0.961) } // #EDEFF5
+
+    // Borders
+    var border:   Color { colorScheme == .dark
+        ? Color(red: 0.165, green: 0.184, blue: 0.259)   // #2A2F42
+        : Color(red: 0.878, green: 0.894, blue: 0.941) } // #E0E4F0
+
+    // Input background
+    var inputBg:  Color { colorScheme == .dark
+        ? Color(red: 0.051, green: 0.059, blue: 0.094)
+        : Color(red: 0.961, green: 0.965, blue: 0.980) }
+
+    // Primary text
+    var textPrimary: Color { colorScheme == .dark ? .white : Color(red: 0.122, green: 0.141, blue: 0.204) }
+    // Secondary text
+    var textSecondary: Color { colorScheme == .dark ? Color.white.opacity(0.50) : Color(red: 0.369, green: 0.392, blue: 0.478) }
+    // Muted text
+    var textMuted: Color { colorScheme == .dark ? Color.white.opacity(0.30) : Color(red: 0.600, green: 0.627, blue: 0.710) }
 }
 
 // MARK: - Donut segment shape (exact copy of real dashboard implementation)
@@ -57,6 +81,8 @@ private struct MockDonutSegment: Shape {
 // MARK: - Financial overview card (mock dashboard)
 
 private struct FinancialOverviewCard: View {
+    @Environment(\.colorScheme) private var colorScheme
+    private var p: LoginPalette { LoginPalette(colorScheme: colorScheme) }
 
     // Same fractions as real dashboard mock data
     private let colors:      [Color]   = [Color.m1Primary, Color.m1Grey, Color.m1Green]
@@ -207,7 +233,7 @@ private struct FinancialOverviewCard: View {
             .frame(height: 280)
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(Color.m1Border, lineWidth: 0.5))
+                .strokeBorder(p.border, lineWidth: 0.5))
 
             // ── Stat cards ─────────────────────────────────────────────
             HStack(spacing: 8) {
@@ -241,10 +267,10 @@ private struct FinancialOverviewCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Color.m1Surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(p.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.m1Border, lineWidth: 0.5)
+                .strokeBorder(p.border, lineWidth: 0.5)
         )
     }
 }
@@ -265,53 +291,40 @@ struct LoginView: View {
     @State private var passkeyLoading  = false
     @State private var errorMessage: String?
 
+    private var p: LoginPalette { LoginPalette(colorScheme: colorScheme) }
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                // ── Logo ────────────────────────────────────────────────
                 logoSection
                     .padding(.top, 52)
                     .padding(.bottom, 28)
 
-                // ── Mock financial dashboard ────────────────────────────
                 FinancialOverviewCard()
                     .padding(.horizontal, 20)
 
-                // ── Status badge ────────────────────────────────────────
                 statusBadge
                     .padding(.top, 20)
                     .padding(.bottom, 20)
 
-                // ── Sign-in form card ───────────────────────────────────
                 formCard
                     .padding(.horizontal, 20)
 
-                // ── Footer ──────────────────────────────────────────────
                 footerSection
                     .padding(.top, 28)
                     .padding(.bottom, 40)
             }
         }
-        .background(Color.m1Canvas.ignoresSafeArea())
+        .background(p.canvas.ignoresSafeArea())
     }
 
-    // MARK: - Logo
+    // MARK: - Logo (wordmark only, no icon mark)
 
     private var logoSection: some View {
-        HStack(spacing: 12) {
-            Image("logo-mark")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 40, height: 40)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .environment(\.colorScheme, .dark)
-
-            Image("logo-wordmark")
-                .resizable()
-                .scaledToFit()
-                .frame(height: 22)
-                .environment(\.colorScheme, .dark)
-        }
+        Image("logo-wordmark")
+            .resizable()
+            .scaledToFit()
+            .frame(height: 32)    // slightly bigger than before (was 22)
     }
 
     // MARK: - Status badge
@@ -322,34 +335,32 @@ struct LoginView: View {
                 .shadow(color: Color.m1Green.opacity(0.8), radius: 4)
             Text("Your business, in your pocket.")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.white.opacity(0.65))
+                .foregroundStyle(p.textSecondary)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 7)
-        .background(Color.m1Surface2, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.m1Border, lineWidth: 0.5))
+        .background(p.surface2, in: Capsule())
+        .overlay(Capsule().strokeBorder(p.border, lineWidth: 0.5))
     }
 
     // MARK: - Form card
 
     private var formCard: some View {
         VStack(spacing: 0) {
-            // Header
             VStack(spacing: 4) {
                 Text(step == .email ? "Sign in" : "Enter password")
                     .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(p.textPrimary)
                 Text(step == .email
                      ? "Access your MainOne workspace"
                      : email)
                     .font(.system(size: 13))
-                    .foregroundStyle(Color.white.opacity(0.5))
+                    .foregroundStyle(p.textSecondary)
                     .lineLimit(1)
             }
             .padding(.top, 22)
             .padding(.bottom, 18)
 
-            // Error
             if let err = errorMessage {
                 Text(err)
                     .font(.caption)
@@ -359,15 +370,14 @@ struct LoginView: View {
                     .padding(.bottom, 12)
             }
 
-            // Fields
             VStack(spacing: 12) {
                 if step == .email {
-                    styledField(placeholder: "Email address", text: $email, keyboard: .emailAddress, content: .emailAddress)
+                    styledField(placeholder: "Email address", text: $email,
+                                keyboard: .emailAddress, content: .emailAddress)
                 } else {
                     styledSecureField(placeholder: "Password", text: $password)
                 }
 
-                // Primary action button
                 Button { Task { await primaryAction() } } label: {
                     ZStack {
                         if isCheckingEmail || isSigningIn {
@@ -378,8 +388,7 @@ struct LoginView: View {
                                 .foregroundStyle(.white)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(maxWidth: .infinity).frame(height: 50)
                     .background(
                         LinearGradient(colors: [Color.m1Primary, Color.m1PrimaryH],
                                        startPoint: .leading, endPoint: .trailing),
@@ -387,25 +396,24 @@ struct LoginView: View {
                     )
                     .shadow(color: Color.m1Primary.opacity(0.45), radius: 12, x: 0, y: 6)
                 }
-                .disabled(isCheckingEmail || isSigningIn || (step == .email ? email.isEmpty : password.isEmpty))
+                .disabled(isCheckingEmail || isSigningIn ||
+                          (step == .email ? email.isEmpty : password.isEmpty))
 
-                // Back button (password step)
                 if step == .password {
                     Button { withAnimation { step = .email; password = ""; errorMessage = nil } } label: {
                         Text("← Use a different email")
                             .font(.system(size: 13))
-                            .foregroundStyle(Color.white.opacity(0.45))
+                            .foregroundStyle(p.textMuted)
                     }
                 }
             }
             .padding(.horizontal, 20)
 
-            // Passkey divider + button
             if step == .email {
                 HStack(spacing: 10) {
-                    Rectangle().fill(Color.m1Border).frame(height: 0.5)
-                    Text("or").font(.caption).foregroundStyle(Color.white.opacity(0.30))
-                    Rectangle().fill(Color.m1Border).frame(height: 0.5)
+                    Rectangle().fill(p.border).frame(height: 0.5)
+                    Text("or").font(.caption).foregroundStyle(p.textMuted)
+                    Rectangle().fill(p.border).frame(height: 0.5)
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
@@ -413,7 +421,7 @@ struct LoginView: View {
                 Button { Task { await passkeyAction() } } label: {
                     HStack(spacing: 8) {
                         if passkeyLoading {
-                            ProgressView().scaleEffect(0.8).tint(.white)
+                            ProgressView().scaleEffect(0.8).tint(p.textPrimary)
                         } else {
                             Image(systemName: "touchid")
                                 .font(.system(size: 16, weight: .medium))
@@ -421,14 +429,11 @@ struct LoginView: View {
                                 .font(.system(size: 15, weight: .medium))
                         }
                     }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(Color.m1Surface2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(Color.m1Border, lineWidth: 0.8)
-                    )
+                    .foregroundStyle(p.textPrimary)
+                    .frame(maxWidth: .infinity).frame(height: 48)
+                    .background(p.surface2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(p.border, lineWidth: 0.8))
                 }
                 .disabled(passkeyLoading)
                 .padding(.horizontal, 20)
@@ -436,11 +441,9 @@ struct LoginView: View {
 
             Spacer().frame(height: 22)
         }
-        .background(Color.m1Surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(Color.m1Border, lineWidth: 0.5)
-        )
+        .background(p.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .strokeBorder(p.border, lineWidth: 0.5))
     }
 
     // MARK: - Footer
@@ -451,11 +454,11 @@ struct LoginView: View {
                 Circle().fill(Color.m1Green).frame(width: 5, height: 5)
                 Text("Connected to MainOne")
                     .font(.system(size: 11))
-                    .foregroundStyle(Color.white.opacity(0.35))
+                    .foregroundStyle(p.textMuted)
             }
             Text("MainOne v1.0")
                 .font(.system(size: 10))
-                .foregroundStyle(Color.white.opacity(0.20))
+                .foregroundStyle(p.textMuted.opacity(0.6))
         }
     }
 
@@ -470,14 +473,14 @@ struct LoginView: View {
             .textContentType(content)
             .autocapitalization(.none)
             .autocorrectionDisabled()
-            .foregroundStyle(.white)
-            .tint(Color.m1CTA)
+            .foregroundStyle(p.textPrimary)
+            .tint(Color.m1Primary)
             .padding(.horizontal, 16)
             .frame(height: 50)
-            .background(Color.m1Canvas, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(p.inputBg, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Color.m1Border, lineWidth: 0.8)
+                    .strokeBorder(p.border, lineWidth: 0.8)
             )
     }
 
@@ -485,14 +488,14 @@ struct LoginView: View {
     private func styledSecureField(placeholder: String, text: Binding<String>) -> some View {
         SecureField(placeholder, text: text)
             .textContentType(.password)
-            .foregroundStyle(.white)
-            .tint(Color.m1CTA)
+            .foregroundStyle(p.textPrimary)
+            .tint(Color.m1Primary)
             .padding(.horizontal, 16)
             .frame(height: 50)
-            .background(Color.m1Canvas, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(p.inputBg, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Color.m1Border, lineWidth: 0.8)
+                    .strokeBorder(p.border, lineWidth: 0.8)
             )
     }
 
@@ -539,21 +542,22 @@ struct LoginView: View {
 
 struct MfaView: View {
     @EnvironmentObject var auth: AuthService
+    @Environment(\.colorScheme) private var colorScheme
     @State private var code = ""
     @State private var isVerifying = false
     @State private var errorMessage: String?
+
+    private var p: LoginPalette { LoginPalette(colorScheme: colorScheme) }
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            // Logo
-            Image("logo-mark")
+            // Wordmark only — no icon mark
+            Image("logo-wordmark")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 56, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .environment(\.colorScheme, .dark)
+                .frame(height: 28)
                 .padding(.bottom, 28)
 
             // Card
@@ -561,10 +565,10 @@ struct MfaView: View {
                 VStack(spacing: 6) {
                     Text("Two-Factor Auth")
                         .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(p.textPrimary)
                     Text("Enter the 6-digit code from your authenticator app")
                         .font(.system(size: 13))
-                        .foregroundStyle(Color.white.opacity(0.50))
+                        .foregroundStyle(p.textSecondary)
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 22)
@@ -581,15 +585,13 @@ struct MfaView: View {
                     .keyboardType(.numberPad)
                     .font(.system(size: 32, weight: .bold, design: .monospaced))
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.white)
-                    .tint(Color.m1CTA)
+                    .foregroundStyle(p.textPrimary)
+                    .tint(Color.m1Primary)
                     .padding(.horizontal, 20)
                     .frame(height: 64)
-                    .background(Color.m1Canvas, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(Color.m1Border, lineWidth: 0.8)
-                    )
+                    .background(p.inputBg, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(p.border, lineWidth: 0.8))
                     .onChange(of: code) { newValue in
                         let digits = newValue.filter(\.isNumber)
                         if digits.count > 6 { code = String(digits.prefix(6)); return }
@@ -608,8 +610,7 @@ struct MfaView: View {
                                 .foregroundStyle(.white)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(maxWidth: .infinity).frame(height: 50)
                     .background(
                         LinearGradient(colors: [Color.m1Primary, Color.m1PrimaryH],
                                        startPoint: .leading, endPoint: .trailing),
@@ -623,15 +624,13 @@ struct MfaView: View {
                 Button { auth.cancelMfa() } label: {
                     Text("Cancel")
                         .font(.system(size: 13))
-                        .foregroundStyle(Color.white.opacity(0.40))
+                        .foregroundStyle(p.textMuted)
                 }
                 .padding(.bottom, 22)
             }
-            .background(Color.m1Surface, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .strokeBorder(Color.m1Border, lineWidth: 0.5)
-            )
+            .background(p.surface, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(p.border, lineWidth: 0.5))
             .padding(.horizontal, 24)
 
             Spacer()
