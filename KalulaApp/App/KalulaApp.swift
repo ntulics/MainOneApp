@@ -38,7 +38,7 @@ struct RootView: View {
                     MainTabView()
                 }
             } else {
-                LoginView()
+                LoginRootView()
             }
         }
         .animation(.easeInOut(duration: 0.25), value: auth.isAuthenticated)

@@ -1,160 +1,502 @@
 import SwiftUI
 
+// MARK: - Login step
+
+private enum LoginStep { case email, password }
+
 // MARK: - LoginView
 
 struct LoginView: View {
     @EnvironmentObject var auth: AuthService
+    @Environment(\.colorScheme) private var colorScheme
 
-    var body: some View {
-        if auth.mfaPending {
-            MfaView()
-                .environmentObject(auth)
-        } else {
-            CredentialsView()
-                .environmentObject(auth)
-        }
-    }
-}
+    // Two-step flow
+    @State private var step: LoginStep = .email
+    @State private var email    = ""
+    @State private var password = ""
 
-// MARK: - Credentials step (email + password, passkey button)
-
-private struct CredentialsView: View {
-    @EnvironmentObject var auth: AuthService
-
-    @State private var email       = ""
-    @State private var password    = ""
-    @State private var isLoading   = false
+    // Loading / error
+    @State private var isCheckingEmail  = false
+    @State private var isSigningIn      = false
+    @State private var passkeyLoading   = false
     @State private var errorMessage: String?
-    @State private var passkeyLoading = false
+
+    // MARK: - Design tokens (MainOne blue palette)
+
+    /// Page canvas: #F0F4FF light / #0D1436 dark
+    private var canvas: Color {
+        colorScheme == .dark
+            ? Color(r: 0.051, g: 0.078, b: 0.212)
+            : Color(r: 0.941, g: 0.957, b: 1.000)
+    }
+
+    /// Card surface
+    private var surface: Color {
+        colorScheme == .dark
+            ? Color(r: 0.094, g: 0.118, b: 0.259)
+            : Color.white
+    }
+
+    /// Input background
+    private var inputBg: Color {
+        colorScheme == .dark
+            ? Color(r: 0.122, g: 0.149, b: 0.298)
+            : Color(r: 0.929, g: 0.945, b: 1.000)
+    }
+
+    /// Card border
+    private var border: Color {
+        colorScheme == .dark
+            ? Color(r: 0.200, g: 0.243, b: 0.431)
+            : Color(r: 0.835, g: 0.878, b: 0.980)
+    }
+
+    private var primaryText: Color {
+        colorScheme == .dark ? Color(r: 0.961, g: 0.973, b: 1.000) : Color(r: 0.051, g: 0.078, b: 0.212)
+    }
+
+    private var secondaryText: Color {
+        colorScheme == .dark ? Color(r: 0.639, g: 0.686, b: 0.800) : Color(r: 0.369, g: 0.424, b: 0.600)
+    }
+
+    /// MainOne blue #1366EF
+    private let brand = Color(r: 0.075, g: 0.400, b: 0.937)
+
+    /// Hero gradient — blue left to indigo-blue right
+    private let heroGradient = LinearGradient(
+        stops: [
+            .init(color: Color(r: 0.047, g: 0.337, b: 0.871), location: 0.00),
+            .init(color: Color(r: 0.102, g: 0.396, b: 0.937), location: 0.50),
+            .init(color: Color(r: 0.153, g: 0.302, b: 0.820), location: 1.00),
+        ],
+        startPoint: .init(x: 0, y: 1),
+        endPoint:   .init(x: 1, y: 0)
+    )
+
+    // MARK: - Body
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 32) {
-                    Spacer().frame(height: 48)
+        ZStack {
+            canvas.ignoresSafeArea()
 
-                    // Logo
-                    VStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .fill(Color(hex: "#1366EF"))
-                                .frame(width: 72, height: 72)
-                            Image(systemName: "square.stack.3d.up.fill")
-                                .font(.system(size: 34, weight: .medium))
-                                .foregroundStyle(.white)
-                        }
-                        Text("MainOne")
-                            .font(.title.bold())
-                        Text("Sign in to your account")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+            VStack(spacing: 0) {
+                logoSection
 
-                    // Fields
-                    VStack(spacing: 14) {
-                        TextField("Email address", text: $email)
-                            .textContentType(.emailAddress)
-                            .keyboardType(.emailAddress)
-                            .autocapitalization(.none)
-                            .autocorrectionDisabled()
-                            .padding()
-                            .background(Color(.secondarySystemBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                heroCard
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
 
-                        SecureField("Password", text: $password)
-                            .textContentType(.password)
-                            .padding()
-                            .background(Color(.secondarySystemBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .padding(.horizontal)
+                statusBadge
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
 
-                    // Error
-                    if let msg = errorMessage {
-                        Text(msg)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
+                formCard
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
 
-                    // Sign in button
-                    Button {
-                        Task { await signIn() }
-                    } label: {
-                        Group {
-                            if isLoading {
-                                ProgressView().tint(.white)
-                            } else {
-                                Text("Sign In")
-                                    .fontWeight(.semibold)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color(hex: "#1366EF"))
-                    .padding(.horizontal)
-                    .disabled(isLoading || passkeyLoading || email.isEmpty || password.isEmpty)
-
-                    // Divider
-                    HStack {
-                        Rectangle().frame(height: 1).foregroundStyle(Color(.separator))
-                        Text("or").font(.caption).foregroundStyle(.secondary).fixedSize()
-                        Rectangle().frame(height: 1).foregroundStyle(Color(.separator))
-                    }
-                    .padding(.horizontal)
-
-                    // Passkey button
-                    Button {
-                        Task { await signInWithPasskey() }
-                    } label: {
-                        HStack(spacing: 10) {
-                            if passkeyLoading {
-                                ProgressView().tint(.primary)
-                            } else {
-                                Image(systemName: "person.badge.key.fill")
-                                    .font(.system(size: 18))
-                            }
-                            Text(passkeyLoading ? "Authenticating…" : "Sign in with Passkey")
-                                .fontWeight(.medium)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.primary)
-                    .padding(.horizontal)
-                    .disabled(isLoading || passkeyLoading || email.isEmpty)
-                    .overlay(
-                        // Subtle hint when email is empty
-                        email.isEmpty
-                            ? AnyView(Text("Enter your email first")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .padding(.top, 58)
-                                .padding(.horizontal))
-                            : AnyView(EmptyView())
-                        , alignment: .top
-                    )
-
-                    Spacer().frame(height: 32)
+                if let msg = errorMessage {
+                    Text(msg)
+                        .font(.footnote)
+                        .foregroundStyle(Color(r: 0.863, g: 0.149, b: 0.149))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: 400)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal)
+
+                Spacer(minLength: 0)
+                footerSection.padding(.top, 8).padding(.bottom, 20)
             }
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+    }
+
+    // MARK: - Logo row
+
+    private var logoSection: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(brand)
+                    .frame(width: 38, height: 38)
+                Image(systemName: "square.stack.3d.up.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .shadow(color: brand.opacity(0.30), radius: 8, x: 0, y: 4)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(headerTitle)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(primaryText)
+                Text(headerSubtitle)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(secondaryText)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 22)
+    }
+
+    // MARK: - Hero card
+
+    private var heroCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(step == .email ? "ONE PLATFORM" : contextLabel.uppercased())
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.72))
+                    .tracking(2.4)
+
+                Text(step == .email ? "Business workspace\nfor every team" : contextHeadline)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                    .lineSpacing(2)
+                    .lineLimit(2)
+            }
+
+            mockDashboard
+        }
+        .padding(14)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 26, style: .continuous).fill(heroGradient)
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(LinearGradient(
+                        colors: [Color.white.opacity(0.15), Color.clear],
+                        startPoint: .top,
+                        endPoint: .init(x: 0.5, y: 0.55)
+                    ))
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .shadow(color: brand.opacity(0.30), radius: 22, x: 0, y: 10)
+    }
+
+    // MARK: - Status badge
+
+    private var statusBadge: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(Color(r: 0.086, g: 0.749, b: 0.337))
+                .frame(width: 8, height: 8)
+            Text(step == .email ? "Your business, in your pocket." : badgeText)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(secondaryText)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 7)
+        .background(surface)
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(border, lineWidth: 1))
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Form card
+
+    private var formCard: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            if step == .email {
+                // ── Step 1: email ─────────────────────────────────────────────
+                Text("Sign in")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(primaryText)
+
+                styledField(
+                    TextField("Email address", text: $email)
+                        .autocorrectionDisabled()
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                        .foregroundStyle(primaryText)
+                        .tint(brand)
+                        .onSubmit { Task { await continueFromEmail() } }
+                )
+
+                // Email continue
+                Button { Task { await continueFromEmail() } } label: {
+                    Group {
+                        if isCheckingEmail {
+                            ProgressView().tint(.white).frame(maxWidth: .infinity)
+                        } else {
+                            Text("Continue →")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .frame(height: 54)
+                    .background(buttonGradient)
+                }
+                .buttonStyle(.plain)
+                .disabled(isCheckingEmail || email.trimmingCharacters(in: .whitespaces).isEmpty)
+
+                // ── Passkey divider ───────────────────────────────────────────
+                HStack {
+                    Rectangle().frame(height: 1).foregroundStyle(border)
+                    Text("or").font(.system(size: 12)).foregroundStyle(secondaryText).fixedSize()
+                    Rectangle().frame(height: 1).foregroundStyle(border)
+                }
+
+                Button { Task { await signInWithPasskey() } } label: {
+                    HStack(spacing: 8) {
+                        if passkeyLoading {
+                            ProgressView().tint(brand)
+                        } else {
+                            Image(systemName: "person.badge.key.fill").foregroundStyle(brand)
+                        }
+                        Text(passkeyLoading ? "Authenticating…" : "Sign in with Passkey")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(primaryText)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(inputBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(border, lineWidth: 1.5))
+                }
+                .buttonStyle(.plain)
+                .disabled(passkeyLoading || email.trimmingCharacters(in: .whitespaces).isEmpty)
+
+            } else {
+                // ── Step 2: password ──────────────────────────────────────────
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Password")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(secondaryText)
+                        Text("Sign in as \(email.split(separator: "@").first.map(String.init) ?? email)")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(primaryText)
+                    }
+                    Spacer()
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            step = .email
+                            password = ""
+                            errorMessage = nil
+                        }
+                    } label: {
+                        Text("Change")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(brand)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                styledField(
+                    SecureField("Password", text: $password)
+                        .foregroundStyle(primaryText)
+                        .tint(brand)
+                        .onSubmit { Task { await signIn() } }
+                )
+
+                Button { Task { await signIn() } } label: {
+                    Group {
+                        if isSigningIn {
+                            ProgressView().tint(.white).frame(maxWidth: .infinity)
+                        } else {
+                            Text("Sign in →")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .frame(height: 54)
+                    .background(buttonGradient)
+                }
+                .buttonStyle(.plain)
+                .disabled(isSigningIn || password.isEmpty)
+            }
+        }
+        .padding(18)
+        .background(surface)
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(border, lineWidth: 1))
+        .shadow(
+            color: colorScheme == .dark ? Color.black.opacity(0.30) : brand.opacity(0.08),
+            radius: 24, x: 0, y: 10
+        )
+    }
+
+    // MARK: - Footer
+
+    private var footerSection: some View {
+        VStack(spacing: 3) {
+            Text("Connected to MainOne")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(secondaryText)
+            Text("MainOne v1.0")
+                .font(.system(size: 11))
+                .foregroundStyle(secondaryText.opacity(0.6))
+        }
+    }
+
+    // MARK: - Mock dashboard (inside hero card)
+
+    private var mockDashboard: some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
+                mockShell
+                mockMetricRow
+            }
+            mockBadgeCard.frame(width: 88)
+        }
+    }
+
+    private var mockShell: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("MainOne Business")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(Color(r: 0.05, g: 0.08, b: 0.22))
+
+            Text("Invoices, quotes, expenses and contacts — all in one place.")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(Color(r: 0.35, g: 0.42, b: 0.58))
+                .lineLimit(2)
+
+            HStack(spacing: 8) {
+                miniRing(value: 74, tint: Color(r: 0.94, g: 0.23, b: 0.37))  // Invoice close rate
+                miniRing(value: 62, tint: Color(r: 0.19, g: 0.80, b: 0.38))  // Quote win rate
+                miniRing(value: 91, tint: Color(r: 0.24, g: 0.73, b: 0.98))  // Revenue target
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.96))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+
+    private var mockMetricRow: some View {
+        HStack(spacing: 8) {
+            metricCard(title: leftCardTitle, value: leftCardValue, subtitle: leftCardSub)
+            metricCard(title: rightCardTitle, value: rightCardValue, subtitle: rightCardSub)
+        }
+    }
+
+    private var mockBadgeCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("WORKSPACE")
+                .font(.system(size: 8, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.70))
+                .tracking(1.6)
+
+            Text("MainOne")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.white)
+
+            Text("Business Suite")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(.white.opacity(0.85))
+
+            Text("Invoices · Quotes\nExpenses")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundStyle(.white.opacity(0.68))
+                .lineLimit(3)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color.white.opacity(0.14))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.white.opacity(0.18), lineWidth: 1))
+    }
+
+    private func miniRing(value: Int, tint: Color) -> some View {
+        ZStack {
+            Circle().stroke(tint.opacity(0.22), lineWidth: 7)
+            Circle()
+                .trim(from: 0, to: CGFloat(Double(value) / 100.0))
+                .stroke(tint, style: StrokeStyle(lineWidth: 7, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Text("\(value)")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(Color(r: 0.05, g: 0.08, b: 0.22))
+        }
+        .frame(width: 34, height: 34)
+    }
+
+    private func metricCard(title: String, value: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.80))
+            Text(value)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+            Text(subtitle)
+                .font(.system(size: 8, weight: .medium))
+                .foregroundStyle(.white.opacity(0.72))
+                .lineLimit(2)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.14))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    // MARK: - Computed copy
+
+    private var headerTitle: String {
+        step == .password ? (email.split(separator: "@").first.map(String.init) ?? "MainOne") : "MainOne"
+    }
+    private var headerSubtitle: String {
+        step == .password ? "Business workspace" : "Business workspace"
+    }
+    private var contextLabel: String { "YOUR ACCOUNT" }
+    private var contextHeadline: String { "Invoices, quotes,\nand expenses" }
+    private var badgeText: String { "Ready — enter your password." }
+
+    private var leftCardTitle: String  { "Revenue" }
+    private var leftCardValue: String  { "R 124k" }
+    private var leftCardSub: String    { "This month" }
+    private var rightCardTitle: String { "Invoices" }
+    private var rightCardValue: String { "12" }
+    private var rightCardSub: String   { "Outstanding" }
+
+    // MARK: - Styled field helper
+
+    private func styledField<F: View>(_ field: F) -> some View {
+        field
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .background(inputBg)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(border, lineWidth: 1.5))
+    }
+
+    // Button gradient background
+    private var buttonGradient: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(LinearGradient(
+                    colors: [Color(r: 0.047, g: 0.337, b: 0.871), Color(r: 0.200, g: 0.490, b: 0.980)],
+                    startPoint: .leading, endPoint: .trailing))
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(LinearGradient(
+                    colors: [Color.white.opacity(0.14), Color.clear],
+                    startPoint: .top, endPoint: .center))
+        }
+        .shadow(color: brand.opacity(0.38), radius: 14, x: 0, y: 6)
     }
 
     // MARK: - Actions
 
-    private func signIn() async {
-        isLoading    = true
+    private func continueFromEmail() async {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        isCheckingEmail = true
         errorMessage = nil
-        defer { isLoading = false }
+        defer { isCheckingEmail = false }
+        // Move to password step — no email lookup needed (backend validates at sign-in)
+        withAnimation(.easeInOut(duration: 0.22)) { step = .password }
+    }
 
+    private func signIn() async {
+        isSigningIn  = true
+        errorMessage = nil
+        defer { isSigningIn = false }
         do {
             try await auth.login(
                 email: email.trimmingCharacters(in: .whitespaces),
@@ -171,148 +513,171 @@ private struct CredentialsView: View {
         passkeyLoading = true
         errorMessage   = nil
         defer { passkeyLoading = false }
-
         do {
             try await auth.loginWithPasskey(email: email.trimmingCharacters(in: .whitespaces))
         } catch let e as APIServiceError {
-            // Ignore user cancellation silently
             if case .httpError(0, _) = e { return }
             errorMessage = e.errorDescription
         } catch let e as NSError where e.domain == "com.apple.AuthenticationServices.AuthorizationError" {
-            // Associated Domains not configured — happens with a free Apple Developer account
-            errorMessage = "Passkey sign-in is not available on this device. Please sign in with your email and password."
+            errorMessage = "Passkey sign-in is not available. Please use your email and password."
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 }
 
-// MARK: - MFA step
+// MARK: - MFA screen (shown by LoginView root when auth.mfaPending == true)
 
-private struct MfaView: View {
+struct MfaView: View {
     @EnvironmentObject var auth: AuthService
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var code        = ""
     @State private var isLoading   = false
     @State private var errorMessage: String?
 
+    private var canvas: Color {
+        colorScheme == .dark ? Color(r: 0.051, g: 0.078, b: 0.212) : Color(r: 0.941, g: 0.957, b: 1.000)
+    }
+    private var surface: Color {
+        colorScheme == .dark ? Color(r: 0.094, g: 0.118, b: 0.259) : Color.white
+    }
+    private var border: Color {
+        colorScheme == .dark ? Color(r: 0.200, g: 0.243, b: 0.431) : Color(r: 0.835, g: 0.878, b: 0.980)
+    }
+    private var primaryText: Color {
+        colorScheme == .dark ? Color(r: 0.961, g: 0.973, b: 1.000) : Color(r: 0.051, g: 0.078, b: 0.212)
+    }
+    private var secondaryText: Color {
+        colorScheme == .dark ? Color(r: 0.639, g: 0.686, b: 0.800) : Color(r: 0.369, g: 0.424, b: 0.600)
+    }
+    private let brand = Color(r: 0.075, g: 0.400, b: 0.937)
+
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 32) {
-                    Spacer().frame(height: 48)
+        ZStack {
+            canvas.ignoresSafeArea()
 
-                    // Icon
-                    VStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .fill(Color(hex: "#1366EF"))
-                                .frame(width: 72, height: 72)
-                            Image(systemName: "lock.shield.fill")
-                                .font(.system(size: 34, weight: .medium))
-                                .foregroundStyle(.white)
-                        }
-                        Text("Two-Factor Auth")
-                            .font(.title.bold())
-                        Text("Enter the 6-digit code from your authenticator app.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
+            VStack(spacing: 0) {
+                // Header
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous).fill(brand).frame(width: 38, height: 38)
+                        Image(systemName: "lock.shield.fill").font(.system(size: 18, weight: .semibold)).foregroundStyle(.white)
                     }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Two-Factor Auth").font(.system(size: 22, weight: .bold)).foregroundStyle(primaryText)
+                        Text("Enter your 6-digit code").font(.system(size: 12, weight: .medium)).foregroundStyle(secondaryText)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 22)
 
-                    // Code field
-                    TextField("000000", text: $code)
+                Spacer().frame(height: 32)
+
+                VStack(spacing: 20) {
+                    Text("Open your authenticator app and enter the 6-digit code shown for MainOne.")
+                        .font(.system(size: 14))
+                        .foregroundStyle(secondaryText)
+                        .multilineTextAlignment(.center)
+
+                    TextField("000 000", text: $code)
                         .textContentType(.oneTimeCode)
                         .keyboardType(.numberPad)
-                        .font(.system(size: 32, weight: .semibold, design: .monospaced))
+                        .font(.system(size: 36, weight: .bold, design: .monospaced))
                         .multilineTextAlignment(.center)
-                        .padding()
-                        .background(Color(.secondarySystemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .padding(.horizontal)
+                        .padding(.vertical, 20)
+                        .background(
+                            colorScheme == .dark
+                                ? Color(r: 0.122, g: 0.149, b: 0.298)
+                                : Color(r: 0.929, g: 0.945, b: 1.000)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(border, lineWidth: 1.5))
                         .onChange(of: code) { new in
-                            // Auto-submit when 6 digits are entered (iOS 16 compatible)
                             let digits = new.filter(\.isNumber)
                             code = String(digits.prefix(6))
                             if code.count == 6 { Task { await verify() } }
                         }
 
-                    // Error
                     if let msg = errorMessage {
-                        Text(msg)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                        Text(msg).font(.footnote).foregroundStyle(Color(r: 0.863, g: 0.149, b: 0.149)).multilineTextAlignment(.center)
                     }
 
-                    // Verify button
-                    Button {
-                        Task { await verify() }
-                    } label: {
+                    Button { Task { await verify() } } label: {
                         Group {
                             if isLoading {
-                                ProgressView().tint(.white)
+                                ProgressView().tint(.white).frame(maxWidth: .infinity)
                             } else {
-                                Text("Verify")
-                                    .fontWeight(.semibold)
+                                Text("Verify →").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white).frame(maxWidth: .infinity)
                             }
                         }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
+                        .frame(height: 54)
+                        .background(
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(LinearGradient(
+                                        colors: [Color(r: 0.047, g: 0.337, b: 0.871), Color(r: 0.200, g: 0.490, b: 0.980)],
+                                        startPoint: .leading, endPoint: .trailing))
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(LinearGradient(colors: [Color.white.opacity(0.14), Color.clear], startPoint: .top, endPoint: .center))
+                            }
+                            .shadow(color: brand.opacity(0.38), radius: 14, x: 0, y: 6)
+                        )
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color(hex: "#1366EF"))
-                    .padding(.horizontal)
+                    .buttonStyle(.plain)
                     .disabled(isLoading || code.count < 6)
 
-                    // Back to login
-                    Button {
-                        auth.cancelMfa()
-                    } label: {
+                    Button { auth.cancelMfa() } label: {
                         Text("Use a different account")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(secondaryText)
                     }
-
-                    Spacer().frame(height: 32)
+                    .buttonStyle(.plain)
                 }
-                .frame(maxWidth: 400)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal)
+                .padding(22)
+                .background(surface)
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(border, lineWidth: 1))
+                .shadow(color: colorScheme == .dark ? Color.black.opacity(0.30) : brand.opacity(0.08), radius: 24, x: 0, y: 10)
+                .padding(.horizontal, 20)
+
+                Spacer()
             }
-            .navigationTitle("")
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 
     private func verify() async {
         guard code.count == 6 else { return }
-        isLoading    = true
-        errorMessage = nil
+        isLoading = true; errorMessage = nil
         defer { isLoading = false }
-
         do {
             try await auth.verifyMfa(code: code)
         } catch let e as APIServiceError {
-            errorMessage = e.errorDescription
-            code = ""
+            errorMessage = e.errorDescription; code = ""
         } catch {
-            errorMessage = error.localizedDescription
-            code = ""
+            errorMessage = error.localizedDescription; code = ""
         }
     }
 }
 
-// MARK: - Color+Hex (local helper)
+// MARK: - Root login router (password vs MFA step)
+
+struct LoginRootView: View {
+    @EnvironmentObject var auth: AuthService
+
+    var body: some View {
+        if auth.mfaPending {
+            MfaView().environmentObject(auth)
+        } else {
+            LoginView().environmentObject(auth)
+        }
+    }
+}
+
+// MARK: - Color convenience init
 
 private extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let r = Double((int >> 16) & 0xFF) / 255
-        let g = Double((int >>  8) & 0xFF) / 255
-        let b = Double( int        & 0xFF) / 255
-        self.init(red: r, green: g, blue: b)
-    }
+    init(r: Double, g: Double, b: Double) { self.init(red: r, green: g, blue: b) }
 }
