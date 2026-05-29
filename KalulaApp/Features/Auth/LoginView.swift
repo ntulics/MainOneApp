@@ -82,199 +82,154 @@ private struct MockDonutSegment: Shape {
 
 private struct FinancialOverviewCard: View {
     @Environment(\.colorScheme) private var colorScheme
-    private var p: LoginPalette { LoginPalette(colorScheme: colorScheme) }
 
-    // Same fractions as real dashboard mock data
+    private var isDark: Bool { colorScheme == .dark }
+
+    // Card background adapts to system mode
+    private var cardBg: AnyShapeStyle {
+        if isDark {
+            return AnyShapeStyle(LinearGradient(
+                colors: [Color(red: 0.09, green: 0.11, blue: 0.17),
+                         Color(red: 0.07, green: 0.08, blue: 0.13)],
+                startPoint: .topLeading, endPoint: .bottomTrailing))
+        } else {
+            return AnyShapeStyle(LinearGradient(
+                colors: [Color(red: 0.95, green: 0.97, blue: 1.00),
+                         Color(red: 0.91, green: 0.94, blue: 0.99)],
+                startPoint: .topLeading, endPoint: .bottomTrailing))
+        }
+    }
+    private var holeColor: Color { isDark
+        ? Color(red: 0.07, green: 0.08, blue: 0.13)
+        : Color(red: 0.93, green: 0.95, blue: 0.99) }
+    private var labelColor: Color  { isDark ? Color.white.opacity(0.45) : Color(red: 0.3, green: 0.35, blue: 0.5) }
+    private var valueColor: Color  { isDark ? .white : Color(red: 0.12, green: 0.14, blue: 0.20) }
+    private var subColor:   Color  { isDark ? Color.white.opacity(0.38) : Color(red: 0.5, green: 0.55, blue: 0.65) }
+    private var borderColor: Color { isDark
+        ? Color(red: 0.165, green: 0.184, blue: 0.259)
+        : Color(red: 0.84, green: 0.88, blue: 0.95) }
+
     private let colors:      [Color]   = [Color.m1Primary, Color.m1Grey, Color.m1Green]
     private let outerRatios: [CGFloat] = [0.98, 1.03, 1.01]
     private let labels:      [String]  = ["REVENUE", "EXPENSES", "PROFIT"]
     private let values:      [String]  = ["R1.6M",   "R586k",   "R814k"]
     private let icons:       [String]  = ["icon-revenue-wallet", "icon-expenses-arrow", "icon-profit-up"]
     private let percents:    [Int]     = [50, 19, 31]
-
-    // Precomputed segment boundaries — avoids control flow inside ViewBuilder
-    private let st: [Double] = [0.00, 0.50, 0.69]   // cumulative start
-    private let en: [Double] = [0.50, 0.69, 1.00]   // cumulative end
+    private let st: [Double] = [0.00, 0.50, 0.69]
+    private let en: [Double] = [0.50, 0.69, 1.00]
 
     var body: some View {
-        VStack(spacing: 8) {
+        ZStack(alignment: .topTrailing) {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(cardBg)
 
-            // ── Card shell — exact copy of real darkCardShell ──────────
-            ZStack(alignment: .topTrailing) {
-                LinearGradient(
-                    colors: [Color(red: 0.09, green: 0.11, blue: 0.17),
-                             Color(red: 0.07, green: 0.08, blue: 0.13)],
-                    startPoint: .topLeading, endPoint: .bottomTrailing
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            // Glow blobs (more subtle in light mode)
+            Circle().fill(Color.m1Primary)
+                .frame(width: 140, height: 140).blur(radius: 50)
+                .offset(x: 30, y: -45).opacity(isDark ? 0.26 : 0.08)
+            Circle().fill(Color(red: 0.0, green: 0.48, blue: 1.0))
+                .frame(width: 100, height: 100).blur(radius: 55)
+                .offset(x: -90, y: 50).opacity(isDark ? 0.16 : 0.06)
 
-                // Brand glow top-right
-                Circle().fill(Color.m1Primary)
-                    .frame(width: 160, height: 160).blur(radius: 50)
-                    .offset(x: 40, y: -55).opacity(0.26)
-                // Blue glow bottom-left
-                Circle().fill(Color(red: 0.0, green: 0.48, blue: 1.0))
-                    .frame(width: 120, height: 120).blur(radius: 60)
-                    .offset(x: -110, y: 60).opacity(0.16)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(borderColor, lineWidth: 0.5)
 
-                // Content
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("FINANCIAL OVERVIEW")
-                        .font(.system(size: 9.5, weight: .bold))
-                        .tracking(1.8)
-                        .foregroundStyle(Color.white.opacity(0.45))
-                        .padding(.bottom, 6)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("FINANCIAL OVERVIEW")
+                    .font(.system(size: 9.5, weight: .bold))
+                    .tracking(1.8)
+                    .foregroundStyle(labelColor)
+                    .padding(.bottom, 8)
 
-                    HStack(alignment: .center, spacing: 16) {
-                        // ── Donut (identical to real dashboard) ────────
-                        GeometryReader { proxy in
-                            let size        = min(proxy.size.width, proxy.size.height)
-                            let center      = CGPoint(x: proxy.size.width / 2,
-                                                      y: proxy.size.height / 2)
-                            let labelRadius = size * 0.39
+                HStack(alignment: .center, spacing: 14) {
+                    // ── Donut ──────────────────────────────────────────
+                    GeometryReader { proxy in
+                        let size        = min(proxy.size.width, proxy.size.height)
+                        let center      = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
+                        let labelRadius = size * 0.39
 
-                            ZStack {
-                                ForEach(0..<3, id: \.self) { k in
-                                    let mid = (st[k] + en[k]) / 2
-                                    let angle = (mid * 360 - 90) * .pi / 180
-                                    let lp = CGPoint(
-                                        x: center.x + CGFloat(cos(angle)) * labelRadius,
-                                        y: center.y + CGFloat(sin(angle)) * labelRadius
-                                    )
-                                    MockDonutSegment(
-                                        startFraction: st[k], endFraction: en[k],
-                                        innerRatio: 0.48, outerRatio: outerRatios[k]
-                                    )
-                                    .fill(colors[k])
-                                    .shadow(color: .black.opacity(0.42), radius: 9, x: 0, y: 6)
-
-                                    Text("\(percents[k])%")
-                                        .font(.system(size: 11, weight: .black, design: .rounded))
-                                        .foregroundStyle(.white)
-                                        .minimumScaleFactor(0.65)
-                                        .lineLimit(1)
-                                        .shadow(color: .black.opacity(0.18), radius: 1, x: 0, y: 1)
-                                        .frame(width: 58, height: 34)
-                                        .position(lp)
-                                }
-
-                                // Centre hole with dual shadow
-                                Circle()
-                                    .fill(Color(red: 0.07, green: 0.08, blue: 0.13))
-                                    .frame(width: size * 0.50, height: size * 0.50)
-                                    .shadow(color: .black.opacity(0.78), radius: 14, x: 0, y: 8)
-                                    .shadow(color: .black.opacity(0.34), radius: 4,  x: 0, y: 2)
-
-                                VStack(spacing: 3) {
-                                    Text("NET")
-                                        .font(.system(size: 9, weight: .black))
-                                        .foregroundStyle(Color.white.opacity(0.45))
-                                        .tracking(0.5)
-                                    Text("R814k")
-                                        .font(.system(size: 17, weight: .black, design: .rounded))
-                                        .foregroundStyle(Color.m1Green)
-                                        .minimumScaleFactor(0.6)
-                                        .lineLimit(1)
-                                    Text("profit")
-                                        .font(.system(size: 8.5))
-                                        .foregroundStyle(Color.white.opacity(0.38))
-                                }
-                            }
-                        }
-                        .frame(width: 204, height: 204)
-                        .offset(y: 2)
-
-                        // ── Legend (identical to real dashboard) ────────
-                        VStack(alignment: .leading, spacing: 10) {
+                        ZStack {
                             ForEach(0..<3, id: \.self) { k in
-                                HStack(alignment: .center, spacing: 8) {
-                                    RoundedRectangle(cornerRadius: 2)
-                                        .fill(colors[k])
-                                        .frame(width: 3, height: 36)
-                                    Image(icons[k])
-                                        .resizable()
-                                        .renderingMode(.template)
-                                        .foregroundStyle(colors[k])
-                                        .frame(width: 28, height: 28)
-                                    VStack(alignment: .leading, spacing: 1) {
-                                        Text(labels[k])
-                                            .font(.system(size: 10.5, weight: .bold))
-                                            .foregroundStyle(Color.white.opacity(0.45))
-                                        Text(values[k])
-                                            .font(.system(size: 17, weight: .black, design: .rounded))
-                                            .foregroundStyle(.white)
-                                            .minimumScaleFactor(0.65)
-                                            .lineLimit(1)
-                                        Text("\(percents[k])% of total")
-                                            .font(.system(size: 9, weight: .medium))
-                                            .foregroundStyle(Color.white.opacity(0.38))
-                                            .lineLimit(1)
-                                    }
+                                let mid   = (st[k] + en[k]) / 2
+                                let angle = (mid * 360 - 90) * .pi / 180
+                                let lp    = CGPoint(
+                                    x: center.x + CGFloat(cos(angle)) * labelRadius,
+                                    y: center.y + CGFloat(sin(angle)) * labelRadius)
+
+                                MockDonutSegment(startFraction: st[k], endFraction: en[k],
+                                                 innerRatio: 0.48, outerRatio: outerRatios[k])
+                                    .fill(colors[k])
+                                    .shadow(color: .black.opacity(isDark ? 0.42 : 0.18), radius: 9, x: 0, y: 6)
+
+                                Text("\(percents[k])%")
+                                    .font(.system(size: 10, weight: .black, design: .rounded))
+                                    .foregroundStyle(.white)
+                                    .minimumScaleFactor(0.65).lineLimit(1)
+                                    .shadow(color: .black.opacity(0.25), radius: 1, x: 0, y: 1)
+                                    .frame(width: 48, height: 28).position(lp)
+                            }
+
+                            Circle()
+                                .fill(holeColor)
+                                .frame(width: size * 0.50, height: size * 0.50)
+                                .shadow(color: .black.opacity(isDark ? 0.78 : 0.12), radius: 14, x: 0, y: 8)
+                                .shadow(color: .black.opacity(isDark ? 0.34 : 0.06), radius: 4,  x: 0, y: 2)
+
+                            VStack(spacing: 2) {
+                                Text("NET").font(.system(size: 8, weight: .black)).tracking(0.5)
+                                    .foregroundStyle(labelColor)
+                                Text("R814k").font(.system(size: 15, weight: .black, design: .rounded))
+                                    .foregroundStyle(Color.m1Green).minimumScaleFactor(0.6).lineLimit(1)
+                                Text("profit").font(.system(size: 8))
+                                    .foregroundStyle(subColor)
+                            }
+                        }
+                    }
+                    .frame(width: 172, height: 172)
+
+                    // ── Legend ─────────────────────────────────────────
+                    VStack(alignment: .leading, spacing: 9) {
+                        ForEach(0..<3, id: \.self) { k in
+                            HStack(alignment: .center, spacing: 8) {
+                                RoundedRectangle(cornerRadius: 2).fill(colors[k]).frame(width: 3, height: 34)
+                                Image(icons[k]).resizable().renderingMode(.template)
+                                    .foregroundStyle(colors[k]).frame(width: 24, height: 24)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(labels[k])
+                                        .font(.system(size: 9.5, weight: .bold))
+                                        .foregroundStyle(labelColor)
+                                    Text(values[k])
+                                        .font(.system(size: 15, weight: .black, design: .rounded))
+                                        .foregroundStyle(valueColor)
+                                        .minimumScaleFactor(0.65).lineLimit(1)
+                                    Text("\(percents[k])% of total")
+                                        .font(.system(size: 8.5, weight: .medium))
+                                        .foregroundStyle(subColor).lineLimit(1)
                                 }
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-
-                    Spacer(minLength: 0)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(20)
-                .frame(maxHeight: .infinity)
 
-                // Bottom brand accent line
-                VStack {
-                    Spacer()
-                    LinearGradient(colors: [Color.m1Primary, Color.m1Primary.opacity(0)],
-                                   startPoint: .leading, endPoint: .trailing)
-                        .frame(height: 3)
-                        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                }
+                Spacer(minLength: 0)
             }
-            .frame(height: 280)
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(p.border, lineWidth: 0.5))
+            .padding(18)
+            .frame(maxHeight: .infinity)
 
-            // ── Stat cards ─────────────────────────────────────────────
-            HStack(spacing: 8) {
-                statCard(dot: Color.m1Primary,
-                         label: "OUTSTANDING", value: "R48k",
-                         valueColor: Color.m1Primary)
-                statCard(dot: Color(red: 0.94, green: 0.27, blue: 0.27),
-                         label: "OVERDUE",     value: "R12k",
-                         valueColor: Color(red: 0.94, green: 0.27, blue: 0.27))
-                statCard(dot: Color.m1CTA,
-                         label: "UPCOMING",    value: "R95k",
-                         valueColor: Color.m1CTA)
+            // Bottom accent line
+            VStack {
+                Spacer()
+                LinearGradient(colors: [Color.m1Primary, Color.m1Primary.opacity(0)],
+                               startPoint: .leading, endPoint: .trailing)
+                    .frame(height: 3)
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             }
         }
-    }
-
-    @ViewBuilder
-    private func statCard(dot: Color, label: String, value: String, valueColor: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 4) {
-                Circle().fill(dot).frame(width: 6, height: 6)
-                Text(label)
-                    .font(.system(size: 8, weight: .semibold))
-                    .tracking(0.8)
-                    .foregroundStyle(Color.white.opacity(0.40))
-            }
-            Text(value)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(valueColor)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(p.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(p.border, lineWidth: 0.5)
-        )
+        .frame(height: 246)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
-
 
 // MARK: - LoginView
 
@@ -294,28 +249,29 @@ struct LoginView: View {
     private var p: LoginPalette { LoginPalette(colorScheme: colorScheme) }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 0) {
-                logoSection
-                    .padding(.top, 52)
-                    .padding(.bottom, 28)
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
 
-                FinancialOverviewCard()
-                    .padding(.horizontal, 20)
-                    .environment(\.colorScheme, .dark)
+            logoSection
+                .padding(.bottom, 20)
 
-                statusBadge
-                    .padding(.top, 20)
-                    .padding(.bottom, 20)
+            FinancialOverviewCard()
+                .padding(.horizontal, 20)
 
-                formCard
-                    .padding(.horizontal, 20)
+            statusBadge
+                .padding(.top, 16)
+                .padding(.bottom, 16)
 
-                footerSection
-                    .padding(.top, 28)
-                    .padding(.bottom, 40)
-            }
+            // Form: biometric only when session exists, otherwise email/passkey
+            formCard
+                .padding(.horizontal, 20)
+
+            Spacer(minLength: 0)
+
+            footerSection
+                .padding(.bottom, 28)
         }
+        .padding(.top, 52)
         .background(p.canvas.ignoresSafeArea())
     }
 
@@ -355,107 +311,109 @@ struct LoginView: View {
 
     private var formCard: some View {
         VStack(spacing: 0) {
-
-            // ── Biometric quick-login (shown when a saved session exists) ──
-            if auth.hasSavedSession && step == .email {
-                biometricSection
-                    .padding(.top, 20)
-                    .padding(.horizontal, 20)
-            }
-
-            VStack(spacing: 4) {
-                Text(step == .email ? "Sign in" : "Enter password")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(p.textPrimary)
-                Text(step == .email
-                     ? "Access your MainOne workspace"
-                     : email)
-                    .font(.system(size: 13))
-                    .foregroundStyle(p.textSecondary)
-                    .lineLimit(1)
-            }
-            .padding(.top, auth.hasSavedSession && step == .email ? 14 : 22)
-            .padding(.bottom, 18)
-
-            if let err = errorMessage {
-                Text(err)
-                    .font(.caption)
-                    .foregroundStyle(Color(red: 0.972, green: 0.427, blue: 0.427))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
-            }
-
-            VStack(spacing: 12) {
-                if step == .email {
-                    styledField(placeholder: "Email address", text: $email,
-                                keyboard: .emailAddress, content: .emailAddress)
-                } else {
-                    styledSecureField(placeholder: "Password", text: $password)
-                }
-
-                Button { Task { await primaryAction() } } label: {
-                    ZStack {
-                        if isCheckingEmail || isSigningIn {
-                            ProgressView().tint(.white)
-                        } else {
-                            Text(step == .email ? "Continue" : "Sign in")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(.white)
-                        }
-                    }
-                    .frame(maxWidth: .infinity).frame(height: 50)
-                    .background(
-                        LinearGradient(colors: [Color.m1Primary, Color.m1PrimaryH],
-                                       startPoint: .leading, endPoint: .trailing),
-                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    )
-                    .shadow(color: Color.m1Primary.opacity(0.45), radius: 12, x: 0, y: 6)
-                }
-                .disabled(isCheckingEmail || isSigningIn ||
-                          (step == .email ? email.isEmpty : password.isEmpty))
-
-                if step == .password {
-                    Button { withAnimation { step = .email; password = ""; errorMessage = nil } } label: {
-                        Text("← Use a different email")
+            if auth.hasSavedSession {
+                // ── Biometric-only card (no email/passkey needed) ──────
+                VStack(spacing: 14) {
+                    VStack(spacing: 4) {
+                        Text("Welcome back")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundStyle(p.textPrimary)
+                        Text("Use \(biometricLabel) to sign in")
                             .font(.system(size: 13))
-                            .foregroundStyle(p.textMuted)
+                            .foregroundStyle(p.textSecondary)
                     }
-                }
-            }
-            .padding(.horizontal, 20)
+                    .padding(.top, 20)
 
-            if step == .email {
-                HStack(spacing: 10) {
-                    Rectangle().fill(p.border).frame(height: 0.5)
-                    Text("or").font(.caption).foregroundStyle(p.textMuted)
-                    Rectangle().fill(p.border).frame(height: 0.5)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                    if let err = auth.biometricError {
+                        Text(err).font(.caption)
+                            .foregroundStyle(Color(red: 0.972, green: 0.427, blue: 0.427))
+                            .multilineTextAlignment(.center).padding(.horizontal, 16)
+                    }
 
-                Button { Task { await passkeyAction() } } label: {
-                    HStack(spacing: 8) {
-                        if passkeyLoading {
-                            ProgressView().scaleEffect(0.8).tint(p.textPrimary)
-                        } else {
-                            Image(systemName: "touchid")
-                                .font(.system(size: 16, weight: .medium))
-                            Text("Sign in with Passkey")
-                                .font(.system(size: 15, weight: .medium))
+                    biometricSection.padding(.horizontal, 20)
+                }
+                .padding(.bottom, 20)
+
+            } else {
+                // ── Email / password form ──────────────────────────────
+                VStack(spacing: 4) {
+                    Text(step == .email ? "Sign in" : "Enter password")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(p.textPrimary)
+                    Text(step == .email ? "Access your MainOne workspace" : email)
+                        .font(.system(size: 13)).foregroundStyle(p.textSecondary).lineLimit(1)
+                }
+                .padding(.top, 20).padding(.bottom, 16)
+
+                if let err = errorMessage {
+                    Text(err).font(.caption)
+                        .foregroundStyle(Color(red: 0.972, green: 0.427, blue: 0.427))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16).padding(.bottom, 10)
+                }
+
+                VStack(spacing: 12) {
+                    if step == .email {
+                        styledField(placeholder: "Email address", text: $email,
+                                    keyboard: .emailAddress, content: .emailAddress)
+                    } else {
+                        styledSecureField(placeholder: "Password", text: $password)
+                    }
+
+                    Button { Task { await primaryAction() } } label: {
+                        ZStack {
+                            if isCheckingEmail || isSigningIn { ProgressView().tint(.white) }
+                            else {
+                                Text(step == .email ? "Continue" : "Sign in")
+                                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                            }
+                        }
+                        .frame(maxWidth: .infinity).frame(height: 50)
+                        .background(
+                            LinearGradient(colors: [Color.m1Primary, Color.m1PrimaryH],
+                                           startPoint: .leading, endPoint: .trailing),
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .shadow(color: Color.m1Primary.opacity(0.45), radius: 12, x: 0, y: 6)
+                    }
+                    .disabled(isCheckingEmail || isSigningIn ||
+                              (step == .email ? email.isEmpty : password.isEmpty))
+
+                    if step == .password {
+                        Button { withAnimation { step = .email; password = ""; errorMessage = nil } } label: {
+                            Text("← Use a different email").font(.system(size: 13))
+                                .foregroundStyle(p.textMuted)
                         }
                     }
-                    .foregroundStyle(p.textPrimary)
-                    .frame(maxWidth: .infinity).frame(height: 48)
-                    .background(p.surface2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(p.border, lineWidth: 0.8))
                 }
-                .disabled(passkeyLoading)
                 .padding(.horizontal, 20)
-            }
 
-            Spacer().frame(height: 22)
+                if step == .email {
+                    HStack(spacing: 10) {
+                        Rectangle().fill(p.border).frame(height: 0.5)
+                        Text("or").font(.caption).foregroundStyle(p.textMuted)
+                        Rectangle().fill(p.border).frame(height: 0.5)
+                    }
+                    .padding(.horizontal, 20).padding(.vertical, 14)
+
+                    Button { Task { await passkeyAction() } } label: {
+                        HStack(spacing: 8) {
+                            if passkeyLoading { ProgressView().scaleEffect(0.8).tint(p.textPrimary) }
+                            else {
+                                Image(systemName: "touchid").font(.system(size: 16, weight: .medium))
+                                Text("Sign in with Passkey").font(.system(size: 15, weight: .medium))
+                            }
+                        }
+                        .foregroundStyle(p.textPrimary)
+                        .frame(maxWidth: .infinity).frame(height: 48)
+                        .background(p.surface2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(p.border, lineWidth: 0.8))
+                    }
+                    .disabled(passkeyLoading).padding(.horizontal, 20)
+                }
+
+                Spacer().frame(height: 20)
+            }
         }
         .background(p.surface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous)

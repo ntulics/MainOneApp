@@ -36,7 +36,6 @@
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* BrandColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* BrandColors.swift */; };
 		EC15BE59B2A518E55D0557C3 /* KalulaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B56498E00FEC0994915EA254 /* KalulaApp.swift */; };
 		F8300B54D3F5A07ACD322ABF /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B72EEAA4F7F49F37D3D4F05 /* LoginView.swift */; };
-		C1D2E3F4A5B6C7D8E9F0A1B2 /* BiometricLockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E3F4A5B6C7D8E9F0A1B2C3 /* BiometricLockView.swift */; };
 		F9C90226FDAF97AF49768B29 /* InvoicesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F42F111362BAE4F8DCCE73D /* InvoicesListView.swift */; };
 /* End PBXBuildFile section */
 
@@ -46,7 +45,6 @@
 		25207C2B63C2378671D9079E /* SuppliersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuppliersView.swift; sourceTree = "<group>"; };
 		2F42F111362BAE4F8DCCE73D /* InvoicesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvoicesListView.swift; sourceTree = "<group>"; };
 		3B72EEAA4F7F49F37D3D4F05 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-		D2E3F4A5B6C7D8E9F0A1B2C3 /* BiometricLockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricLockView.swift; sourceTree = "<group>"; };
 		45AA29F47564EB4DF63315C6 /* QuotesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotesListView.swift; sourceTree = "<group>"; };
 		3373AA07528F4BFDA447D8EB /* DocumentViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentViewerView.swift; sourceTree = "<group>"; };
 		46CE4240811329AADAEE89AE /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
@@ -203,7 +201,6 @@
 			isa = PBXGroup;
 			children = (
 				3B72EEAA4F7F49F37D3D4F05 /* LoginView.swift */,
-				D2E3F4A5B6C7D8E9F0A1B2C3 /* BiometricLockView.swift */,
 			);
 			path = Auth;
 			sourceTree = "<group>";
@@ -361,7 +358,6 @@
 				F9C90226FDAF97AF49768B29 /* InvoicesListView.swift in Sources */,
 				EC15BE59B2A518E55D0557C3 /* KalulaApp.swift in Sources */,
 				F8300B54D3F5A07ACD322ABF /* LoginView.swift in Sources */,
-				C1D2E3F4A5B6C7D8E9F0A1B2 /* BiometricLockView.swift in Sources */,
 				6499F1211F04146A5E7BF653 /* Models.swift in Sources */,
 				7FE860D9CD5A9851C929C42E /* OCRService.swift in Sources */,
 				1E946A1DA92D62AFAC08ED51 /* PurchasesView.swift in Sources */,
