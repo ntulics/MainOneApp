@@ -152,7 +152,7 @@ struct SalesView: View {
             Divider().frame(height: 40)
             summaryCell(label: "Received",    value: vm.totalReceived, color: .green)
             Divider().frame(height: 40)
-            summaryCell(label: "Outstanding", value: vm.outstanding,   color: .brand)
+            summaryCell(label: "Outstanding", value: vm.outstanding,   color: Color.brand)
         }
         .padding(.vertical, 12)
         .background(Color(.secondarySystemGroupedBackground))

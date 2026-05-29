@@ -896,7 +896,7 @@ struct DashboardView: View {
 
         return HStack(alignment: .bottom, spacing: 3) {
             ForEach(Array(data.enumerated()), id: \.offset) { idx, item in
-                miniBar(item: item, maxVal: maxVal, maxH: 44, tint: .brand)
+                miniBar(item: item, maxVal: maxVal, maxH: 44, tint: Color.brand)
             }
         }
         .frame(height: 60, alignment: .bottom)
@@ -1701,7 +1701,7 @@ struct iPadDashboardView: View {
 
                 HStack(alignment: .bottom, spacing: 3) {
                     ForEach(Array(data.enumerated()), id: \.offset) { _, item in
-                        iMiniBar(item: item, maxVal: maxVal, maxH: 44, tint: .brand)
+                        iMiniBar(item: item, maxVal: maxVal, maxH: 44, tint: Color.brand)
                     }
                 }
                 .frame(height: 60, alignment: .bottom)

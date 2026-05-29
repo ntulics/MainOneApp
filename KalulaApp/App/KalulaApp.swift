@@ -124,7 +124,7 @@ struct MoreTabView: View {
                             }
                             .buttonStyle(.plain)
                             NavigationLink(destination: PreferencesView()) {
-                                MenuTileContent(title: "Preferences", icon: "gearshape.fill", color: .brand)
+                                MenuTileContent(title: "Preferences", icon: "gearshape.fill", color: Color.brand)
                             }
                             .buttonStyle(.plain)
                             Spacer()

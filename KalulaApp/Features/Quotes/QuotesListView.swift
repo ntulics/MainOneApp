@@ -67,7 +67,7 @@ struct QuotesListView: View {
                                 FilterChip(
                                     label:      filter.1,
                                     isSelected: vm.filterStatus == filter.0,
-                                    tint:       .brand
+                                    tint:       Color.brand
                                 ) {
                                     vm.filterStatus = filter.0
                                 }

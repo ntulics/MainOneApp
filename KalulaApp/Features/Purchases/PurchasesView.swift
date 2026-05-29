@@ -349,7 +349,7 @@ struct PurchasesView: View {
             Divider().frame(height: 40)
             summaryCell(label: "Total Spent",  value: vm.totalSpent,       color: .primary)
             Divider().frame(height: 40)
-            summaryCell(label: "Recurring/mo", value: vm.monthlyRecurring, color: .brand)
+            summaryCell(label: "Recurring/mo", value: vm.monthlyRecurring, color: Color.brand)
         }
         .padding(.vertical, 12)
         .background(Color(.secondarySystemGroupedBackground))
@@ -567,7 +567,7 @@ struct PurchasesView: View {
                     .frame(width: 40, height: 40)
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(item.isActive == true ? .brand : .secondary)
+                    .foregroundStyle(item.isActive == true ? Color.brand : Color.secondary)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.vendor?.name ?? item.description ?? "Recurring")

@@ -252,12 +252,12 @@ struct DocumentsView: View {
     private var typeFilterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                FilterChip(label: "All", isSelected: vm.selectedType == nil, tint: .brand) {
+                FilterChip(label: "All", isSelected: vm.selectedType == nil, tint: Color.brand) {
                     vm.selectedType = nil
                     Task { await vm.load() }
                 }
                 ForEach(DocumentType.allCases, id: \.self) { type in
-                    FilterChip(label: type.displayName, isSelected: vm.selectedType == type, tint: .brand) {
+                    FilterChip(label: type.displayName, isSelected: vm.selectedType == type, tint: Color.brand) {
                         vm.selectedType = type
                         Task { await vm.load() }
                     }

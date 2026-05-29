@@ -52,7 +52,7 @@ struct QuoteDetailView: View {
                     Text("Total").bold()
                     Spacer()
                     Text(quote.total, format: .currency(code: "ZAR")).bold()
-                        .foregroundStyle(quote.status == "ACCEPTED" ? .green : .brand)
+                        .foregroundStyle(quote.status == "ACCEPTED" ? .green : Color.brand)
                 }
             }
 

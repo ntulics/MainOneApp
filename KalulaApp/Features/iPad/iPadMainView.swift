@@ -75,7 +75,7 @@ struct iPadSidebarView: View {
 
                 // ── Main ────────────────────────────────────────────────────
                 Section("Main") {
-                    SidebarRow(icon: "house.fill", label: "Dashboard", color: .brand)
+                    SidebarRow(icon: "house.fill", label: "Dashboard", color: Color.brand)
                         .tag(AppDestination.dashboard)
                 }
 
@@ -87,7 +87,7 @@ struct iPadSidebarView: View {
                         .tag(AppDestination.suppliers)
                     SidebarRow(icon: "doc.text.fill",       label: "Sales",      color: .indigo)
                         .tag(AppDestination.sales)
-                    SidebarRow(icon: "cart.fill",           label: "Purchases",  color: .brand)
+                    SidebarRow(icon: "cart.fill",           label: "Purchases",  color: Color.brand)
                         .tag(AppDestination.purchases)
                 }
 
@@ -103,7 +103,7 @@ struct iPadSidebarView: View {
                 Section("Settings") {
                     SidebarRow(icon: "building.2.fill", label: "Company",     color: .blue)
                         .tag(AppDestination.companySettings)
-                    SidebarRow(icon: "gearshape.fill",  label: "Preferences", color: .brand)
+                    SidebarRow(icon: "gearshape.fill",  label: "Preferences", color: Color.brand)
                         .tag(AppDestination.preferences)
                 }
             }

@@ -248,7 +248,7 @@ struct TypeOptionRow: View {
             HStack(spacing: 16) {
                 Image(systemName: type.iconName)
                     .font(.title3)
-                    .foregroundStyle(isSelected ? .white : .brand)
+                    .foregroundStyle(isSelected ? .white : Color.brand)
                     .frame(width: 44, height: 44)
                     .background(
                         isSelected ? Color.brand : Color.brand.opacity(0.1),
