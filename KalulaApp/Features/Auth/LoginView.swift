@@ -7,26 +7,26 @@ private enum LoginStep { case email, password }
 // MARK: - Brand tokens
 
 private extension Color {
-    /// Primary purple  #5C3FC8
-    static let m1Primary   = Color(red: 0.361, green: 0.247, blue: 0.784)
-    /// Purple hover    #4E34B0
-    static let m1PrimaryH  = Color(red: 0.306, green: 0.204, blue: 0.690)
+    /// Primary blue    #1366EF
+    static let m1Primary   = Color(red: 0.075, green: 0.400, blue: 0.937)
+    /// Blue hover      #0F56DE
+    static let m1PrimaryH  = Color(red: 0.059, green: 0.337, blue: 0.871)
     /// CTA amber       #FFB400
     static let m1CTA       = Color(red: 1.000, green: 0.706, blue: 0.000)
-    /// Dark canvas     #161226
-    static let m1Canvas    = Color(red: 0.086, green: 0.071, blue: 0.149)
-    /// Dark surface    #1F1A34
-    static let m1Surface   = Color(red: 0.122, green: 0.102, blue: 0.204)
-    /// Dark surface 2  #2B2444
-    static let m1Surface2  = Color(red: 0.169, green: 0.141, blue: 0.267)
-    /// Border          #3F3764
-    static let m1Border    = Color(red: 0.247, green: 0.216, blue: 0.392)
+    /// Dark canvas     #0D0F18
+    static let m1Canvas    = Color(red: 0.051, green: 0.059, blue: 0.094)
+    /// Dark surface    #151821
+    static let m1Surface   = Color(red: 0.082, green: 0.094, blue: 0.129)
+    /// Dark surface 2  #1C202E
+    static let m1Surface2  = Color(red: 0.110, green: 0.125, blue: 0.180)
+    /// Border          #2A2F42
+    static let m1Border    = Color(red: 0.165, green: 0.184, blue: 0.259)
     /// Revenue orange  #F59E0B
     static let m1Orange    = Color(red: 0.961, green: 0.620, blue: 0.043)
-    /// Profit green    #16A34A
-    static let m1Green     = Color(red: 0.086, green: 0.639, blue: 0.290)
+    /// Profit green    #22C55E
+    static let m1Green     = Color(red: 0.133, green: 0.773, blue: 0.369)
     /// Expenses grey
-    static let m1Grey      = Color(red: 0.420, green: 0.420, blue: 0.460)
+    static let m1Grey      = Color(red: 0.380, green: 0.400, blue: 0.450)
 }
 
 // MARK: - Donut chart helper
@@ -66,75 +66,76 @@ private struct DonutChart: View {
 private struct FinancialOverviewCard: View {
 
     var body: some View {
-        VStack(spacing: 0) {
-            // ── Main card ──────────────────────────────────────────────
-            ZStack {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
+        VStack(spacing: 8) {
+
+            // ── Financial Overview ─────────────────────────────────────
+            ZStack(alignment: .bottomLeading) {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(Color.m1Surface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .strokeBorder(Color.m1Border, lineWidth: 0.5)
-                    )
+
+                // Orange glow at bottom-left — matches real dashboard card
+                Color.m1Orange.opacity(0.18)
+                    .blur(radius: 40)
+                    .frame(width: 140, height: 80)
+                    .offset(x: -10, y: 10)
+                    .clipped()
+
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(Color.m1Border, lineWidth: 0.5)
 
                 VStack(spacing: 0) {
-                    // Header
+                    // Header row
                     HStack {
                         Text("FINANCIAL OVERVIEW")
                             .font(.system(size: 9, weight: .semibold))
                             .tracking(1.6)
-                            .foregroundStyle(Color.white.opacity(0.45))
+                            .foregroundStyle(Color.white.opacity(0.40))
                         Spacer()
                         HStack(spacing: 4) {
                             ForEach(0..<3, id: \.self) { i in
                                 Circle()
-                                    .fill(i == 0 ? Color.white.opacity(0.85) : Color.white.opacity(0.25))
+                                    .fill(i == 0 ? Color.white.opacity(0.80) : Color.white.opacity(0.20))
                                     .frame(width: 5, height: 5)
                             }
                         }
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 10)
 
-                    // Body — chart + legend
-                    HStack(alignment: .center, spacing: 14) {
-                        // Donut chart
+                    // Chart + legend
+                    HStack(alignment: .center, spacing: 12) {
                         ZStack {
                             DonutChart(
                                 segments: [
-                                    DonutSegment(color: .m1Orange, fraction: 0.50),
-                                    DonutSegment(color: .m1Grey,   fraction: 0.17),
-                                    DonutSegment(color: .m1Green,  fraction: 0.33),
+                                    DonutSegment(color: .m1Orange, fraction: 0.52),
+                                    DonutSegment(color: .m1Grey,   fraction: 0.19),
+                                    DonutSegment(color: .m1Green,  fraction: 0.29),
                                 ],
-                                lineWidth: 20
+                                lineWidth: 19
                             )
-
-                            // Center labels
                             VStack(spacing: 1) {
                                 Text("NET")
-                                    .font(.system(size: 8, weight: .medium))
-                                    .tracking(1)
-                                    .foregroundStyle(Color.white.opacity(0.45))
-                                Text("R131k")
-                                    .font(.system(size: 18, weight: .bold))
+                                    .font(.system(size: 7, weight: .semibold))
+                                    .tracking(1.2)
+                                    .foregroundStyle(Color.white.opacity(0.40))
+                                Text("R814k")
+                                    .font(.system(size: 16, weight: .bold))
                                     .foregroundStyle(Color.m1Green)
                                 Text("profit")
-                                    .font(.system(size: 8))
-                                    .foregroundStyle(Color.white.opacity(0.4))
+                                    .font(.system(size: 7))
+                                    .foregroundStyle(Color.white.opacity(0.35))
                             }
-
-                            // Segment percentage labels
-                            percentLabel("50%", angle: -90 + 360 * 0.25, radius: 56)  // centre of Revenue arc
-                            percentLabel("17%", angle: -90 + 360 * 0.585, radius: 56) // centre of Expenses arc
-                            percentLabel("33%", angle: -90 + 360 * 0.835, radius: 56) // centre of Profit arc
+                            percentLabel("52%", angle: -90 + 360 * 0.26,  radius: 54)
+                            percentLabel("19%", angle: -90 + 360 * 0.595, radius: 54)
+                            percentLabel("29%", angle: -90 + 360 * 0.845, radius: 54)
                         }
-                        .frame(width: 130, height: 130)
+                        .frame(width: 126, height: 126)
 
-                        // Legend
-                        VStack(alignment: .leading, spacing: 8) {
-                            legendRow(color: .m1Orange, label: "REVENUE",  value: "R200k", sub: "50% of total")
-                            legendRow(color: .m1Grey,   label: "EXPENSES", value: "R68k",  sub: "17% of total")
-                            legendRow(color: .m1Green,  label: "PROFIT",   value: "R131k", sub: "33% of total")
+                        VStack(alignment: .leading, spacing: 7) {
+                            legendRow(color: .m1Orange, label: "REVENUE",  value: "R1.6M", sub: "52% of total")
+                            legendRow(color: .m1Grey,   label: "EXPENSES", value: "R586k", sub: "19% of total")
+                            legendRow(color: .m1Green,  label: "PROFIT",   value: "R814k", sub: "29% of total")
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -142,22 +143,169 @@ private struct FinancialOverviewCard: View {
                     .padding(.bottom, 14)
                 }
             }
-            .frame(height: 198)
+            .frame(height: 194)
 
-            // ── Stat cards strip ───────────────────────────────────────
+            // ── Stat cards ─────────────────────────────────────────────
             HStack(spacing: 8) {
-                statCard(dot: Color(red: 0.376, green: 0.647, blue: 0.980),
-                         label: "OUTSTANDING", value: "R0",     valueColor: Color(red: 0.376, green: 0.647, blue: 0.980))
-                statCard(dot: Color.m1Green.opacity(0.9),
-                         label: "OVERDUE",     value: "R0",     valueColor: .m1Green)
-                statCard(dot: .m1CTA,
-                         label: "UPCOMING",    value: "R345",   valueColor: .m1CTA)
+                statCard(dot: Color.m1Primary,
+                         label: "OUTSTANDING", value: "R48k",
+                         valueColor: Color.m1Primary)
+                statCard(dot: Color(red: 0.94, green: 0.27, blue: 0.27),
+                         label: "OVERDUE",     value: "R12k",
+                         valueColor: Color(red: 0.94, green: 0.27, blue: 0.27))
+                statCard(dot: Color.m1CTA,
+                         label: "UPCOMING",    value: "R95k",
+                         valueColor: Color.m1CTA)
             }
-            .padding(.top, 8)
+
+            // ── Top Expenses ───────────────────────────────────────────
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.m1Surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(Color.m1Border, lineWidth: 0.5)
+                    )
+
+                // Amber glow at bottom — matches real dashboard
+                Color.m1Orange.opacity(0.15)
+                    .blur(radius: 30)
+                    .frame(height: 24)
+                    .frame(maxWidth: .infinity)
+                    .offset(y: 28)
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("TOP · EXPENSES")
+                            .font(.system(size: 9, weight: .semibold))
+                            .tracking(1.4)
+                            .foregroundStyle(Color.white.opacity(0.40))
+                        Spacer()
+                        Text("VIEW ALL →")
+                            .font(.system(size: 9, weight: .bold))
+                            .tracking(0.6)
+                            .foregroundStyle(Color.m1Primary)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
+
+                    ForEach(Array(expenseRows.enumerated()), id: \.offset) { idx, row in
+                        HStack(spacing: 10) {
+                            Text("\(idx + 1)")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(Color.white.opacity(0.30))
+                                .frame(width: 14)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(row.0)
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                Text(row.1)
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(Color.white.opacity(0.35))
+                            }
+                            Spacer()
+                            Text(row.2)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(Color.white.opacity(0.85))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+
+                        if idx < expenseRows.count - 1 {
+                            Divider()
+                                .background(Color.m1Border)
+                                .padding(.horizontal, 14)
+                        }
+                    }
+
+                    Spacer().frame(height: 10)
+                }
+            }
+
+            // ── Top Customers ──────────────────────────────────────────
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.m1Surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(Color.m1Border, lineWidth: 0.5)
+                    )
+
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("TOP · CUSTOMERS")
+                            .font(.system(size: 9, weight: .semibold))
+                            .tracking(1.4)
+                            .foregroundStyle(Color.white.opacity(0.40))
+                        Spacer()
+                        Text("CRM →")
+                            .font(.system(size: 9, weight: .bold))
+                            .tracking(0.6)
+                            .foregroundStyle(Color.m1Primary)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
+
+                    ForEach(Array(customerRows.enumerated()), id: \.offset) { idx, row in
+                        HStack(spacing: 10) {
+                            ZStack {
+                                Circle()
+                                    .fill(row.2.opacity(0.18))
+                                    .frame(width: 26, height: 26)
+                                Text(row.0.prefix(2).uppercased())
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(row.2)
+                            }
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(row.0)
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                Text(row.1)
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(Color.white.opacity(0.35))
+                            }
+                            Spacer()
+                            Text(row.3)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(Color.white.opacity(0.85))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+
+                        if idx < customerRows.count - 1 {
+                            Divider()
+                                .background(Color.m1Border)
+                                .padding(.horizontal, 14)
+                        }
+                    }
+
+                    Spacer().frame(height: 10)
+                }
+            }
         }
     }
 
-    // MARK: Helpers
+    // MARK: - Mock data
+
+    private let expenseRows: [(String, String, String)] = [
+        ("Scoop Distribution",  "19 May 2026", "R386k"),
+        ("Fleet Services SA",   "12 May 2026", "R94k"),
+        ("TechPro Solutions",   "08 May 2026", "R47k"),
+        ("Office Depot SA",     "02 May 2026", "R28k"),
+    ]
+
+    private let customerRows: [(String, String, Color, String)] = [
+        ("Nexus Logistics",   "14 invoices",  Color.m1Primary, "R420k"),
+        ("BrightEdge Media",  "9 invoices",   Color.m1Green,   "R318k"),
+        ("Kibo Industries",   "11 invoices",  Color.m1CTA,     "R275k"),
+        ("Apex Retail Group", "7 invoices",   Color(red: 0.68, green: 0.32, blue: 0.98), "R189k"),
+    ]
+
+    // MARK: - Helpers
 
     @ViewBuilder
     private func percentLabel(_ text: String, angle: Double, radius: CGFloat) -> some View {
@@ -172,22 +320,20 @@ private struct FinancialOverviewCard: View {
     @ViewBuilder
     private func legendRow(color: Color, label: String, value: String, sub: String) -> some View {
         HStack(spacing: 8) {
-            // Coloured bar
             RoundedRectangle(cornerRadius: 2)
                 .fill(color)
-                .frame(width: 3, height: 32)
-
+                .frame(width: 3, height: 30)
             VStack(alignment: .leading, spacing: 1) {
                 Text(label)
                     .font(.system(size: 8, weight: .semibold))
                     .tracking(0.8)
-                    .foregroundStyle(Color.white.opacity(0.45))
+                    .foregroundStyle(Color.white.opacity(0.40))
                 Text(value)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(.white)
                 Text(sub)
                     .font(.system(size: 8))
-                    .foregroundStyle(Color.white.opacity(0.38))
+                    .foregroundStyle(Color.white.opacity(0.35))
             }
         }
     }
@@ -200,10 +346,10 @@ private struct FinancialOverviewCard: View {
                 Text(label)
                     .font(.system(size: 8, weight: .semibold))
                     .tracking(0.8)
-                    .foregroundStyle(Color.white.opacity(0.45))
+                    .foregroundStyle(Color.white.opacity(0.40))
             }
             Text(value)
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(valueColor)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
