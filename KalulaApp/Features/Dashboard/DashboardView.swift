@@ -1393,7 +1393,7 @@ struct AvatarView: View {
             .font(.caption.bold())
             .foregroundStyle(.white)
             .frame(width: size, height: size)
-            .background(.brand, in: Circle())
+            .background(Color.brand, in: Circle())
     }
 }
 
