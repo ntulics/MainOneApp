@@ -1,13 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-	<!-- Associated Domains — required for passkeys (WebAuthn) -->
-	<!-- The webcredentials entry must match the relying party ID used on the server -->
-	<!-- You must also host /.well-known/apple-app-site-association on mainone.co.za -->
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>webcredentials:mainone.co.za</string>
-	</array>
-</dict>
+<dict/>
 </plist>

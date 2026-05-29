@@ -336,7 +336,7 @@ struct SalesView: View {
     }
 
     private func deleteQuote(_ quote: Quote) async {
-        try? await APIService.shared.delete("/quotes/\(quote.id)")
+        _ = try? await APIService.shared.delete("/quotes/\(quote.id)")
         vm.quotes.removeAll { $0.id == quote.id }
         if selectedQuote?.id == quote.id { selectedQuote = nil }
     }

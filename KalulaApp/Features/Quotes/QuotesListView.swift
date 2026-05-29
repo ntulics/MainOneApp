@@ -36,7 +36,7 @@ final class QuotesViewModel: ObservableObject {
     }
 
     func delete(_ quote: Quote) async {
-        try? await APIService.shared.delete("/quotes/\(quote.id)")
+        _ = try? await APIService.shared.delete("/quotes/\(quote.id)")
         quotes.removeAll { $0.id == quote.id }
     }
 }

@@ -32,7 +32,7 @@ final class CustomersViewModel: ObservableObject {
     }
 
     func delete(_ contact: CRMContact) async {
-        try? await APIService.shared.delete("/crm/contacts/\(contact.id)")
+        _ = try? await APIService.shared.delete("/crm/contacts/\(contact.id)")
         contacts.removeAll { $0.id == contact.id }
     }
 }

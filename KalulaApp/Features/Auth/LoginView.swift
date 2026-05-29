@@ -178,6 +178,9 @@ private struct CredentialsView: View {
             // Ignore user cancellation silently
             if case .httpError(0, _) = e { return }
             errorMessage = e.errorDescription
+        } catch let e as NSError where e.domain == "com.apple.AuthenticationServices.AuthorizationError" {
+            // Associated Domains not configured — happens with a free Apple Developer account
+            errorMessage = "Passkey sign-in is not available on this device. Please sign in with your email and password."
         } catch {
             errorMessage = error.localizedDescription
         }

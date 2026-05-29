@@ -33,7 +33,7 @@ final class SuppliersViewModel: ObservableObject {
     }
 
     func delete(_ supplier: Supplier) async {
-        try? await APIService.shared.delete("/vendors/\(supplier.id)")
+        _ = try? await APIService.shared.delete("/vendors/\(supplier.id)")
         suppliers.removeAll { $0.id == supplier.id }
     }
 }
