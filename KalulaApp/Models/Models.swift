@@ -2,9 +2,63 @@ import Foundation
 
 // MARK: - Auth
 
+/// Flexible login response — backend returns either a full session OR an MFA challenge
+struct FlexLoginResponse: Decodable {
+    let accessToken: String?
+    let user: KalulaUser?
+    let mfaRequired: Bool?
+    let tempToken: String?
+}
+
 struct LoginResponse: Codable {
     let accessToken: String
     let user: KalulaUser
+}
+
+struct MfaVerifyRequest: Encodable {
+    let tempToken: String
+    let code: String
+}
+
+// MARK: - Passkey (WebAuthn)
+
+struct PasskeyAuthOptionsRequest: Encodable {
+    let email: String
+}
+
+/// The server's PublicKeyCredentialRequestOptions (simplified — only fields we need)
+struct PasskeyAuthOptions: Decodable {
+    let challenge: String        // base64url
+    let rpId: String?
+    let timeout: Int?
+    let userVerification: String?
+    let allowCredentials: [AllowedCredential]?
+
+    struct AllowedCredential: Decodable {
+        let id: String
+        let type: String
+    }
+}
+
+/// What we send back to verify-auth — mirrors AuthenticationResponseJSON from simplewebauthn
+struct PasskeyVerifyRequest: Encodable {
+    let email: String
+    let response: PasskeyAssertionResponse
+
+    struct PasskeyAssertionResponse: Encodable {
+        let id: String
+        let rawId: String
+        let type: String
+        let response: AuthenticatorAssertionResponse
+        let clientExtensionResults: [String: String]
+
+        struct AuthenticatorAssertionResponse: Encodable {
+            let clientDataJSON: String
+            let authenticatorData: String
+            let signature: String
+            let userHandle: String?
+        }
+    }
 }
 
 struct KalulaUser: Codable, Identifiable {
@@ -228,6 +282,7 @@ struct CRMContact: Codable, Identifiable, Hashable {
     let id: String
     let firstName: String
     let lastName: String
+    let companyName: String?
     let email: String?
     let phone: String?
     let status: String?
@@ -295,11 +350,12 @@ struct CreateInvoiceRequest: Encodable {
 }
 
 struct CreateContactRequest: Encodable {
-    let firstName: String
-    let lastName: String
-    let email: String?
-    let phone: String?
-    let status: String
+    let firstName:   String
+    let lastName:    String
+    let companyName: String?
+    let email:       String?
+    let phone:       String?
+    let status:      String
 }
 
 struct CreateMobileQuoteRequest: Encodable {
@@ -364,16 +420,101 @@ struct UpdateQuoteRequest: Encodable {
 }
 
 struct UpdateContactRequest: Encodable {
-    let firstName: String
-    let lastName:  String
-    let email:     String?
-    let phone:     String?
-    let status:    String
+    let firstName:   String
+    let lastName:    String
+    let companyName: String?
+    let email:       String?
+    let phone:       String?
+    let status:      String
+}
+
+// MARK: - Suppliers (Vendors in backend)
+
+struct Supplier: Codable, Identifiable, Hashable {
+    let id:            String
+    let name:          String
+    let contactPerson: String?
+    let email:         String?
+    let phone:         String?
+    let website:       String?
+    let taxNumber:     String?
+    let address:       String?
+    let notes:         String?
+    let createdAt:     String?
+
+    var displayName: String { name }
+
+    var initials: String {
+        let words = name.split(separator: " ").prefix(2)
+        let result = words.map { String($0.prefix(1)) }.joined().uppercased()
+        return result.isEmpty ? String(name.prefix(2)).uppercased() : result
+    }
+
+    init(from decoder: Decoder) throws {
+        let c         = try decoder.container(keyedBy: CodingKeys.self)
+        id            = try  c.decode(String.self, forKey: .id)
+        name          = (try? c.decode(String.self, forKey: .name)) ?? ""
+        contactPerson = try? c.decode(String.self, forKey: .contactPerson)
+        email         = try? c.decode(String.self, forKey: .email)
+        phone         = try? c.decode(String.self, forKey: .phone)
+        website       = try? c.decode(String.self, forKey: .website)
+        taxNumber     = try? c.decode(String.self, forKey: .taxNumber)
+        address       = try? c.decode(String.self, forKey: .address)
+        notes         = try? c.decode(String.self, forKey: .notes)
+        createdAt     = try? c.decode(String.self, forKey: .createdAt)
+    }
+}
+
+struct CreateSupplierRequest: Encodable {
+    let name:          String
+    let contactPerson: String?
+    let email:         String?
+    let phone:         String?
+    let website:       String?
+    let taxNumber:     String?
+    let notes:         String?
+}
+
+struct UpdateSupplierRequest: Encodable {
+    let name:          String
+    let contactPerson: String?
+    let email:         String?
+    let phone:         String?
+    let website:       String?
+    let taxNumber:     String?
+    let notes:         String?
+}
+
+struct CreateExpenseRequest: Encodable {
+    let vendorId:    String?
+    let description: String?
+    let amount:      Double
+    let tax:         Double?
+    let date:        String?
+    let notes:       String?
+    let reference:   String?
 }
 
 // MARK: - API Error
 
-struct APIError: Codable, Error {
+/// Backend can return `message` as either a String or [String]
+struct APIError: Decodable, Error {
     let message: String
     let statusCode: Int?
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        statusCode = try? c.decode(Int.self, forKey: .statusCode)
+        if let single = try? c.decode(String.self, forKey: .message) {
+            message = single
+        } else if let array = try? c.decode([String].self, forKey: .message) {
+            message = array.joined(separator: ". ")
+        } else {
+            message = "Unknown error"
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case message, statusCode
+    }
 }

@@ -302,14 +302,20 @@ struct DraftItem: Identifiable {
 struct NewInvoiceSheet: View {
     @Binding var isPresented: Bool
 
-    @State private var projectName = ""
-    @State private var notes       = ""
-    @State private var dueDateOn   = false
-    @State private var dueDate     = Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
-    @State private var taxRate     = "15"
-    @State private var items:      [DraftItem] = [DraftItem()]
-    @State private var saving      = false
-    @State private var error       = ""
+    @State private var projectName   = ""
+    @State private var notes         = ""
+    @State private var dueDateOn     = false
+    @State private var dueDate       = Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
+    @State private var taxRate       = "15"
+    @State private var items:        [DraftItem] = [DraftItem()]
+    @State private var saving        = false
+    @State private var error         = ""
+
+    // Contact / company selection
+    @State private var contacts:        [CRMContact] = []
+    @State private var selectedContact: CRMContact?  = nil
+    @State private var showContactPicker = false
+    @State private var emailAllInCompany = false
 
     private var subtotal: Double { items.reduce(0) { $0 + $1.total } }
     private var tax: Double      { subtotal * ((Double(taxRate) ?? 0) / 100) }
@@ -317,9 +323,63 @@ struct NewInvoiceSheet: View {
 
     private var isValid: Bool { !items.allSatisfy({ $0.description.isEmpty }) }
 
+    // Contacts that share the selected contact's company
+    private var companyContacts: [CRMContact] {
+        guard let company = selectedContact?.companyName, !company.isEmpty else { return [] }
+        return contacts.filter { $0.companyName == company && $0.id != selectedContact?.id }
+    }
+
     var body: some View {
         NavigationStack {
             Form {
+                // ── Client ─────────────────────────────────────────────────
+                Section("Client") {
+                    if let contact = selectedContact {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(contact.displayName).font(.subheadline.bold())
+                                if let company = contact.companyName, !company.isEmpty {
+                                    Text(company).font(.caption).foregroundStyle(.orange)
+                                }
+                                if let email = contact.email {
+                                    Text(email).font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            Button("Change") { showContactPicker = true }
+                                .font(.caption.bold())
+                                .foregroundStyle(.orange)
+                        }
+
+                        if !companyContacts.isEmpty {
+                            Toggle(isOn: $emailAllInCompany) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Email all \(selectedContact!.companyName ?? "") contacts")
+                                        .font(.subheadline)
+                                    Text("\(companyContacts.count + 1) contacts will receive this invoice")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .tint(.orange)
+                        }
+                    } else {
+                        Button { showContactPicker = true } label: {
+                            HStack {
+                                Image(systemName: "person.crop.circle.badge.plus")
+                                    .foregroundStyle(.orange)
+                                Text("Select a client (optional)")
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
                 Section("Project") {
                     TextField("Project name (optional)", text: $projectName)
                 }
@@ -409,6 +469,24 @@ struct NewInvoiceSheet: View {
                     .disabled(!isValid || saving)
                 }
             }
+            .task { await loadContacts() }
+            .sheet(isPresented: $showContactPicker) {
+                ContactPickerSheet(
+                    contacts: contacts,
+                    onSelect: { contact in
+                        selectedContact  = contact
+                        emailAllInCompany = false
+                        showContactPicker = false
+                    },
+                    onCancel: { showContactPicker = false }
+                )
+            }
+        }
+    }
+
+    private func loadContacts() async {
+        if let res: ContactsResponse = try? await APIService.shared.get("/crm/contacts") {
+            contacts = res.contacts
         }
     }
 
@@ -430,7 +508,7 @@ struct NewInvoiceSheet: View {
                 ? ISO8601DateFormatter().string(from: dueDate)
                 : nil
             let body = CreateInvoiceRequest(
-                contactId:   nil,
+                contactId:   selectedContact?.id,
                 projectName: projectName.isEmpty ? nil : projectName.trimmingCharacters(in: .whitespaces),
                 dueDate:     dueDateString,
                 notes:       notes.isEmpty ? nil : notes,
@@ -443,6 +521,89 @@ struct NewInvoiceSheet: View {
             self.error = error.localizedDescription
         }
         saving = false
+    }
+}
+
+// MARK: - Contact picker sheet
+
+struct ContactPickerSheet: View {
+    let contacts: [CRMContact]
+    let onSelect: (CRMContact) -> Void
+    let onCancel: () -> Void
+
+    @State private var search = ""
+
+    // Group contacts by company
+    private var grouped: [(company: String?, contacts: [CRMContact])] {
+        var companies: [String: [CRMContact]] = [:]
+        var noCompany: [CRMContact] = []
+        for c in filtered {
+            if let co = c.companyName, !co.isEmpty {
+                companies[co, default: []].append(c)
+            } else {
+                noCompany.append(c)
+            }
+        }
+        var result = companies.sorted { $0.key < $1.key }
+            .map { (company: String?($0.key), contacts: $0.value) }
+        if !noCompany.isEmpty {
+            result.append((company: nil, contacts: noCompany))
+        }
+        return result
+    }
+
+    private var filtered: [CRMContact] {
+        guard !search.isEmpty else { return contacts }
+        let q = search.lowercased()
+        return contacts.filter {
+            $0.displayName.lowercased().contains(q)
+            || ($0.companyName?.lowercased().contains(q) == true)
+            || ($0.email?.lowercased().contains(q) == true)
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(grouped, id: \.company) { group in
+                    Section(group.company ?? "Individual Contacts") {
+                        ForEach(group.contacts) { contact in
+                            Button { onSelect(contact) } label: {
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.orange.opacity(0.15))
+                                            .frame(width: 36, height: 36)
+                                        Text(contact.initials)
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundStyle(.orange)
+                                    }
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(contact.displayName).font(.subheadline.bold())
+                                        if let email = contact.email {
+                                            Text(email).font(.caption).foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            .searchable(text: $search, prompt: "Search clients")
+            .navigationTitle("Select Client")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel", action: onCancel)
+                }
+            }
+        }
     }
 }
 

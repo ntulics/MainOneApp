@@ -10,12 +10,17 @@
 		01B5533E81E5387345B96FD2 /* QuoteDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2AE71F930195C6F88E263B9 /* QuoteDetailView.swift */; };
 		05F6EA219F79DCB380EC92C0 /* CustomersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8A23ECB534FC1D9C913504 /* CustomersView.swift */; };
 		085672BD58D405B067D6F91E /* QuoteReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 677250E1E15363D98D7FF9C4 /* QuoteReviewView.swift */; };
+		0E22A6E422B3B7D9B6E4720A /* iPadMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE947BAC2A38AE49DAEA9B39 /* iPadMainView.swift */; };
+		1E946A1DA92D62AFAC08ED51 /* PurchasesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97AD2B1F93FBA591B383611F /* PurchasesView.swift */; };
 		220C4A6D65551D5910F2A9EC /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46CE4240811329AADAEE89AE /* EmptyStateView.swift */; };
+		CF6C293C1B1448CF8E23729B /* DocumentViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3373AA07528F4BFDA447D8EB /* DocumentViewerView.swift */; };
 		2C705D123CC0153E552A485C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 854BCAE8F6ABD5B096CBF5D8 /* Assets.xcassets */; };
 		455AA29B2EE42D5E450DD283 /* DocumentScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BF154C8284CCF6DDDF46067 /* DocumentScannerView.swift */; };
 		4CC7982C1ECA81A0E24557B5 /* DocumentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA63C2A1472BCAAE776A94B6 /* DocumentsView.swift */; };
 		574481044F210687E4F5BED2 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FBF2A22B68D21518D22912 /* DashboardView.swift */; };
+		5A86482D293E3833644297E6 /* SalesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66E14346D0643BC6BA80EA23 /* SalesView.swift */; };
 		5FF063AF8F2E07921FCFD860 /* Color+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D671110B3F4CB181DFD93265 /* Color+Extensions.swift */; };
+		614EDF49634199208B98CECF /* SuppliersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25207C2B63C2378671D9079E /* SuppliersView.swift */; };
 		6499F1211F04146A5E7BF653 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F558A88E54EDA2646ABAAD90 /* Models.swift */; };
 		66B0DE4549955A10EED7F572 /* ReceiptsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B221EC6FA053F2CC157DEF7 /* ReceiptsView.swift */; };
 		68B3EFFED803B15BF9F9F69E /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AE67F43F97DD2A170FEC5AA /* ErrorView.swift */; };
@@ -23,6 +28,8 @@
 		7FE860D9CD5A9851C929C42E /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E19DA6F0C6B1A9B2F6AE87E /* OCRService.swift */; };
 		8301DE3BD6E529BBA4128E7C /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3BBB27780367C4F93AD87DE /* AuthService.swift */; };
 		88DA4B039D0422F1392FF1EE /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E715347FE3CD94F84E4ECB45 /* ScannerView.swift */; };
+		9314AA2196957863464C985B /* DocumentSigningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6DEACE707D8A9A63D75F07 /* DocumentSigningView.swift */; };
+		C84F296D07CD9192452B4C63 /* ImportantDocumentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6BCF8D49EADBCDFE5F3B2D2 /* ImportantDocumentsView.swift */; };
 		C8CC954D99D9A47059AB32E3 /* DocumentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 077E49D6497DA3221CB6BF31 /* DocumentService.swift */; };
 		D315594C9A3E3C85D90A1CB7 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 146BCF6CF5613E6DBC808149 /* APIService.swift */; };
 		EA661F549A9F07C3DCFC50F5 /* FABButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDAE255C015AB2C8D29BD9C /* FABButton.swift */; };
@@ -34,31 +41,47 @@
 /* Begin PBXFileReference section */
 		077E49D6497DA3221CB6BF31 /* DocumentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentService.swift; sourceTree = "<group>"; };
 		146BCF6CF5613E6DBC808149 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
+		25207C2B63C2378671D9079E /* SuppliersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuppliersView.swift; sourceTree = "<group>"; };
 		2F42F111362BAE4F8DCCE73D /* InvoicesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvoicesListView.swift; sourceTree = "<group>"; };
 		3B72EEAA4F7F49F37D3D4F05 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		45AA29F47564EB4DF63315C6 /* QuotesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotesListView.swift; sourceTree = "<group>"; };
+		3373AA07528F4BFDA447D8EB /* DocumentViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentViewerView.swift; sourceTree = "<group>"; };
 		46CE4240811329AADAEE89AE /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		53FBF2A22B68D21518D22912 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		5B221EC6FA053F2CC157DEF7 /* ReceiptsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptsView.swift; sourceTree = "<group>"; };
 		5BF154C8284CCF6DDDF46067 /* DocumentScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentScannerView.swift; sourceTree = "<group>"; };
+		66E14346D0643BC6BA80EA23 /* SalesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SalesView.swift; sourceTree = "<group>"; };
 		677250E1E15363D98D7FF9C4 /* QuoteReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteReviewView.swift; sourceTree = "<group>"; };
 		7AE67F43F97DD2A170FEC5AA /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
 		7E19DA6F0C6B1A9B2F6AE87E /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
 		854BCAE8F6ABD5B096CBF5D8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8C201B50EE7EFE7204333965 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		97AD2B1F93FBA591B383611F /* PurchasesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchasesView.swift; sourceTree = "<group>"; };
 		AAFD586114553B65FDC979FE /* KalulaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KalulaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B56498E00FEC0994915EA254 /* KalulaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KalulaApp.swift; sourceTree = "<group>"; };
+		BE947BAC2A38AE49DAEA9B39 /* iPadMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iPadMainView.swift; sourceTree = "<group>"; };
 		CCDAE255C015AB2C8D29BD9C /* FABButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FABButton.swift; sourceTree = "<group>"; };
 		CF8A23ECB534FC1D9C913504 /* CustomersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomersView.swift; sourceTree = "<group>"; };
 		D671110B3F4CB181DFD93265 /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
+		D6BCF8D49EADBCDFE5F3B2D2 /* ImportantDocumentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportantDocumentsView.swift; sourceTree = "<group>"; };
+		DB6DEACE707D8A9A63D75F07 /* DocumentSigningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentSigningView.swift; sourceTree = "<group>"; };
 		E3BBB27780367C4F93AD87DE /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		E715347FE3CD94F84E4ECB45 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
 		EA63C2A1472BCAAE776A94B6 /* DocumentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsView.swift; sourceTree = "<group>"; };
 		F2AE71F930195C6F88E263B9 /* QuoteDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteDetailView.swift; sourceTree = "<group>"; };
 		F558A88E54EDA2646ABAAD90 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		AA11223344556677889900AA /* KalulaApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = KalulaApp.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		1415B8D39E2C18634A67E33D /* iPad */ = {
+			isa = PBXGroup;
+			children = (
+				BE947BAC2A38AE49DAEA9B39 /* iPadMainView.swift */,
+			);
+			path = iPad;
+			sourceTree = "<group>";
+		};
 		285733FBCBE5488F75817537 /* Models */ = {
 			isa = PBXGroup;
 			children = (
@@ -73,6 +96,14 @@
 				B56498E00FEC0994915EA254 /* KalulaApp.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		48D600155323DB81479A0AA5 /* Purchases */ = {
+			isa = PBXGroup;
+			children = (
+				97AD2B1F93FBA591B383611F /* PurchasesView.swift */,
+			);
+			path = Purchases;
 			sourceTree = "<group>";
 		};
 		7222262F016411A0E0E95C61 /* Products */ = {
@@ -112,6 +143,14 @@
 			path = Customers;
 			sourceTree = "<group>";
 		};
+		9378C95620E7C2D9E8D291D4 /* Sales */ = {
+			isa = PBXGroup;
+			children = (
+				66E14346D0643BC6BA80EA23 /* SalesView.swift */,
+			);
+			path = Sales;
+			sourceTree = "<group>";
+		};
 		953CB2B561D8A2B90B4B5216 /* Dashboard */ = {
 			isa = PBXGroup;
 			children = (
@@ -137,9 +176,13 @@
 				953CB2B561D8A2B90B4B5216 /* Dashboard */,
 				EAB6E76B8605FB50D6E841A5 /* Documents */,
 				A5F6535C0BAACA5F0D0E477C /* Invoices */,
+				1415B8D39E2C18634A67E33D /* iPad */,
+				48D600155323DB81479A0AA5 /* Purchases */,
 				9EB6FA57005B4007FC7144B6 /* Quotes */,
 				E94A1B6C7F07338087AFB440 /* Receipts */,
+				9378C95620E7C2D9E8D291D4 /* Sales */,
 				7A42DCEA91E5158ED403C268 /* Scanner */,
+				DB77B67597CF02D823C5ACBF /* Suppliers */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -165,6 +208,7 @@
 			children = (
 				854BCAE8F6ABD5B096CBF5D8 /* Assets.xcassets */,
 				8C201B50EE7EFE7204333965 /* Info.plist */,
+				AA11223344556677889900AA /* KalulaApp.entitlements */,
 				3E42D322C679816A43F7F931 /* App */,
 				E52C8BEE3F2A6B54FF689C42 /* Common */,
 				A4A1A0DA3F92412EE9E8F622 /* Features */,
@@ -182,9 +226,18 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
+		DB77B67597CF02D823C5ACBF /* Suppliers */ = {
+			isa = PBXGroup;
+			children = (
+				25207C2B63C2378671D9079E /* SuppliersView.swift */,
+			);
+			path = Suppliers;
+			sourceTree = "<group>";
+		};
 		E52C8BEE3F2A6B54FF689C42 /* Common */ = {
 			isa = PBXGroup;
 			children = (
+				3373AA07528F4BFDA447D8EB /* DocumentViewerView.swift */,
 				46CE4240811329AADAEE89AE /* EmptyStateView.swift */,
 				7AE67F43F97DD2A170FEC5AA /* ErrorView.swift */,
 				CCDAE255C015AB2C8D29BD9C /* FABButton.swift */,
@@ -212,7 +265,9 @@
 		EAB6E76B8605FB50D6E841A5 /* Documents */ = {
 			isa = PBXGroup;
 			children = (
+				DB6DEACE707D8A9A63D75F07 /* DocumentSigningView.swift */,
 				EA63C2A1472BCAAE776A94B6 /* DocumentsView.swift */,
+				D6BCF8D49EADBCDFE5F3B2D2 /* ImportantDocumentsView.swift */,
 			);
 			path = Documents;
 			sourceTree = "<group>";
@@ -289,20 +344,27 @@
 				574481044F210687E4F5BED2 /* DashboardView.swift in Sources */,
 				455AA29B2EE42D5E450DD283 /* DocumentScannerView.swift in Sources */,
 				C8CC954D99D9A47059AB32E3 /* DocumentService.swift in Sources */,
+				9314AA2196957863464C985B /* DocumentSigningView.swift in Sources */,
 				4CC7982C1ECA81A0E24557B5 /* DocumentsView.swift in Sources */,
+				CF6C293C1B1448CF8E23729B /* DocumentViewerView.swift in Sources */,
 				220C4A6D65551D5910F2A9EC /* EmptyStateView.swift in Sources */,
 				68B3EFFED803B15BF9F9F69E /* ErrorView.swift in Sources */,
 				EA661F549A9F07C3DCFC50F5 /* FABButton.swift in Sources */,
+				C84F296D07CD9192452B4C63 /* ImportantDocumentsView.swift in Sources */,
 				F9C90226FDAF97AF49768B29 /* InvoicesListView.swift in Sources */,
 				EC15BE59B2A518E55D0557C3 /* KalulaApp.swift in Sources */,
 				F8300B54D3F5A07ACD322ABF /* LoginView.swift in Sources */,
 				6499F1211F04146A5E7BF653 /* Models.swift in Sources */,
 				7FE860D9CD5A9851C929C42E /* OCRService.swift in Sources */,
+				1E946A1DA92D62AFAC08ED51 /* PurchasesView.swift in Sources */,
 				01B5533E81E5387345B96FD2 /* QuoteDetailView.swift in Sources */,
 				085672BD58D405B067D6F91E /* QuoteReviewView.swift in Sources */,
 				7865AD672D36EE26489BDC0F /* QuotesListView.swift in Sources */,
 				66B0DE4549955A10EED7F572 /* ReceiptsView.swift in Sources */,
+				5A86482D293E3833644297E6 /* SalesView.swift in Sources */,
 				88DA4B039D0422F1392FF1EE /* ScannerView.swift in Sources */,
+				614EDF49634199208B98CECF /* SuppliersView.swift in Sources */,
+				0E22A6E422B3B7D9B6E4720A /* iPadMainView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -435,6 +497,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = KalulaApp/KalulaApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = PR7DR54HF3;
@@ -456,6 +519,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = KalulaApp/KalulaApp.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = PR7DR54HF3;

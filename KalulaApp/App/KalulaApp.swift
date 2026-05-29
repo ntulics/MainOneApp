@@ -32,7 +32,11 @@ struct RootView: View {
     var body: some View {
         Group {
             if auth.isAuthenticated {
-                MainTabView()
+                if UIDevice.current.userInterfaceIdiom == .pad {
+                    iPadMainView()
+                } else {
+                    MainTabView()
+                }
             } else {
                 LoginView()
             }
@@ -53,18 +57,18 @@ struct MainTabView: View {
                     .tabItem { Label("Dashboard", systemImage: "house.fill") }
 
                 CustomersView()
-                    .tabItem { Label("Clients", systemImage: "person.2.fill") }
+                    .tabItem { Label("Customers", systemImage: "person.2.fill") }
 
-                InvoicesListView()
-                    .tabItem { Label("Invoices", systemImage: "doc.text.fill") }
+                SalesView()
+                    .tabItem { Label("Sales", systemImage: "doc.text.fill") }
 
-                QuotesListView()
-                    .tabItem { Label("Quotes", systemImage: "list.clipboard.fill") }
+                PurchasesView()
+                    .tabItem { Label("Purchases", systemImage: "cart.fill") }
+
+                MoreTabView()
+                    .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }
             }
             .tint(.orange)
-        }
-        .sheet(isPresented: $appState.showMore) {
-            MoreMenuSheet()
         }
         .fullScreenCover(isPresented: $appState.showScanner) {
             ScannerView(initialType: appState.scannerType)
@@ -72,97 +76,149 @@ struct MainTabView: View {
     }
 }
 
-// MARK: - More menu sheet
+// MARK: - More tab (Documents + Settings)
 
-struct MoreMenuSheet: View {
-    @EnvironmentObject var auth: AuthService
+struct MoreTabView: View {
+    @EnvironmentObject var auth:     AuthService
     @EnvironmentObject var appState: AppState
-    @Environment(\.dismiss) private var dismiss
-
-    @State private var showDocuments    = false
-    @State private var showReceipts     = false
-    @State private var showSettings     = false
-    @State private var showPreferences  = false
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: 24) {
+            ScrollView {
+                VStack(spacing: 24) {
 
-                        // Scanner
-                        MenuSection(title: "Scanner") {
-                            HStack(spacing: 12) {
-                                MenuTile(title: "Scan Quote",    icon: "doc.text.magnifyingglass", color: .orange) {
-                                    appState.scannerType = .vendorQuote; appState.showScanner = true; dismiss()
-                                }
-                                MenuTile(title: "Scan Receipt",  icon: "receipt",                  color: .mint) {
-                                    appState.scannerType = .receipt;     appState.showScanner = true; dismiss()
-                                }
-                                MenuTile(title: "Scan Document", icon: "doc.badge.plus",            color: .blue) {
-                                    appState.scannerType = .general;     appState.showScanner = true; dismiss()
-                                }
+                    // ── Business ───────────────────────────────────────────
+                    MenuSection(title: "Business") {
+                        HStack(spacing: 12) {
+                            NavigationLink(destination: SuppliersView()) {
+                                MenuTileContent(title: "Suppliers", icon: "shippingbox.fill", color: .green)
                             }
-                        }
-
-                        // Storage
-                        MenuSection(title: "Storage") {
-                            HStack(spacing: 12) {
-                                MenuTile(title: "Documents", icon: "folder.fill",  color: .indigo) { showDocuments = true }
-                                MenuTile(title: "Receipts",  icon: "receipt.fill", color: .green)  { showReceipts  = true }
-                                Spacer()
-                            }
-                        }
-
-                        // Settings
-                        MenuSection(title: "Settings") {
-                            HStack(spacing: 12) {
-                                MenuTile(title: "Company",     icon: "building.2.fill", color: .blue)   { showSettings     = true }
-                                MenuTile(title: "Preferences", icon: "gearshape.fill",  color: .orange) { showPreferences  = true }
-                                Spacer()
-                            }
-                        }
-
-                        // Coming soon
-                        MenuSection(title: "Coming Soon") {
-                            HStack(spacing: 12) {
-                                MenuTile(title: "Tickets",   icon: "ticket",         color: .gray, disabled: true) {}
-                                MenuTile(title: "Analytics", icon: "chart.bar.fill", color: .gray, disabled: true) {}
-                                MenuTile(title: "Purchases", icon: "cart.fill",      color: .gray, disabled: true) {}
-                            }
+                            .buttonStyle(.plain)
+                            Spacer()
+                            Spacer()
                         }
                     }
-                    .padding()
-                    .padding(.bottom, 8)
-                }
 
-                // Sign out — pinned to bottom
-                Divider()
-                Button(role: .destructive) {
-                    dismiss()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { auth.logout() }
-                } label: {
-                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                    // ── Documents ──────────────────────────────────────────
+                    MenuSection(title: "Documents") {
+                        HStack(spacing: 12) {
+                            NavigationLink(destination: DocumentsView(initialType: nil)) {
+                                MenuTileContent(title: "All Documents", icon: "folder.fill", color: .indigo)
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink(destination: ImportantDocumentsView()) {
+                                MenuTileContent(title: "Important", icon: "star.fill", color: .yellow)
+                            }
+                            .buttonStyle(.plain)
+
+                            Spacer()
+                        }
+                    }
+
+                    // ── Settings ───────────────────────────────────────────
+                    MenuSection(title: "Settings") {
+                        HStack(spacing: 12) {
+                            NavigationLink(destination: TenantSettingsView()) {
+                                MenuTileContent(title: "Company", icon: "building.2.fill", color: .blue)
+                            }
+                            .buttonStyle(.plain)
+                            NavigationLink(destination: PreferencesView()) {
+                                MenuTileContent(title: "Preferences", icon: "gearshape.fill", color: .orange)
+                            }
+                            .buttonStyle(.plain)
+                            Spacer()
+                        }
+                    }
                 }
-                .foregroundStyle(.red)
-                .padding(.horizontal)
-                .padding(.top, 12)
-                .padding(.bottom, max(28, 16))
+                .padding()
+                .padding(.bottom, 8)
             }
             .navigationTitle("More")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }.fontWeight(.semibold)
-                }
+
+            // Sign out at bottom
+            Divider()
+            Button(role: .destructive) {
+                auth.logout()
+            } label: {
+                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
             }
-            .navigationDestination(isPresented: $showDocuments)   { DocumentsView() }
-            .navigationDestination(isPresented: $showReceipts)    { ReceiptsView() }
-            .navigationDestination(isPresented: $showSettings)    { TenantSettingsView() }
-            .navigationDestination(isPresented: $showPreferences) { PreferencesView() }
+            .foregroundStyle(.red)
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, max(28, 16))
+        }
+    }
+}
+
+private struct MenuTileContent: View {
+    let title: String
+    let icon:  String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundStyle(color)
+                .frame(width: 52, height: 52)
+                .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+            Text(title)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Document type tile (view + optional scan)
+
+private struct DocTypeTile: View {
+    let title:   String
+    let icon:    String
+    let color:   Color
+    let canScan: Bool
+    let onView:  () -> Void
+    let onScan:  () -> Void
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Button(action: onView) {
+                VStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .font(.title2)
+                        .foregroundStyle(color)
+                        .frame(width: 52, height: 52)
+                        .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+                    Text(title)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.plain)
+
+            if canScan {
+                Button(action: onScan) {
+                    Label("Scan", systemImage: "camera.viewfinder")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(color)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(color.opacity(0.12), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            } else {
+                Color.clear.frame(height: 22)
+            }
         }
     }
 }

@@ -19,11 +19,11 @@ enum APIServiceError: LocalizedError {
 actor APIService {
     static let shared = APIService()
 
-    var baseURL: String = "https://platform.underpin.co.za/v1"
+    /// Production API base URL — always points to mainone.co.za
+    private let baseURL: String = AuthService.baseURL
     private var authToken: String?
 
     func setToken(_ token: String?) { authToken = token }
-    func setBaseURL(_ url: String)  { baseURL = url }
 
     // MARK: - Generic JSON request
 
@@ -39,6 +39,8 @@ actor APIService {
         var req = URLRequest(url: url)
         req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // Send the app's origin so the backend allows passkey assertions
+        req.setValue("https://mainone.co.za", forHTTPHeaderField: "Origin")
         if let token = authToken { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let body  { req.httpBody = try JSONEncoder().encode(body) }
 
@@ -85,8 +87,6 @@ actor APIService {
 
     // MARK: - Authenticated document download (no Azure URL exposed)
 
-    /// Downloads a document through the backend proxy.
-    /// Returns (data, fileExtension) — no Azure storage URL is ever exposed.
     func download(_ path: String) async throws -> (Data, String) {
         guard let url = URL(string: "\(baseURL)\(path)") else { throw APIServiceError.invalidURL }
         var req = URLRequest(url: url)
@@ -107,8 +107,6 @@ actor APIService {
 
     // MARK: - Direct Azure Blob Storage upload (SAS URL)
 
-    /// Uploads raw data directly to Azure using a short-lived SAS URL returned
-    /// by the backend.  No auth header — the SAS query string is the credential.
     func uploadToAzure(sasUrl: String, data: Data, contentType: String) async throws {
         guard let url = URL(string: sasUrl) else { throw APIServiceError.invalidURL }
 

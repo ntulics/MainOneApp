@@ -1396,3 +1396,586 @@ struct AvatarView: View {
             .background(.orange, in: Circle())
     }
 }
+
+// MARK: - iPad Dashboard
+
+struct iPadDashboardView: View {
+    @EnvironmentObject var auth:     AuthService
+    @StateObject private var vm = DashboardViewModel()
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+
+                // ── Row 1: Two hero financial cards ──────────────────────────
+                HStack(alignment: .top, spacing: 16) {
+                    iFinancialOverviewCard
+                        .frame(height: 270)
+                    iRevenueCard
+                        .frame(height: 270)
+                }
+
+                // ── Row 2: Status pills ──────────────────────────────────────
+                HStack(spacing: 12) {
+                    iStatusPill(label: "Outstanding", value: vm.outstanding,
+                                count: vm.outstandingCount,
+                                color: Color(red: 0.23, green: 0.51, blue: 0.96))
+                    iStatusPill(label: "Overdue",     value: vm.overdue,
+                                count: vm.overdueCount,
+                                color: Color(red: 0.94, green: 0.27, blue: 0.27))
+                    iStatusPill(label: "Upcoming",    value: vm.upcomingExpenseTotal,
+                                count: vm.upcomingExpenseCount,
+                                color: Color(red: 0.96, green: 0.62, blue: 0.04))
+                }
+
+                // ── Row 3: Top Expenses + Top Customers ──────────────────────
+                HStack(alignment: .top, spacing: 16) {
+                    iTopExpensesCard
+                    iTopCustomersCard
+                }
+
+                // ── Row 4: Domain Renewals (full width) ──────────────────────
+                if !vm.domainItems.isEmpty {
+                    iDomainRenewalsCard
+                }
+
+                // ── Row 5: Workspace modules (3-column grid) ─────────────────
+                iModulesSection
+            }
+            .padding(24)
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Dashboard")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { Task { await vm.reload() } } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+            }
+        }
+        .refreshable { await vm.reload() }
+        .task { await vm.load() }
+    }
+
+    // MARK: - Card styling (mirrors DashboardView, scoped to this struct)
+
+    private var iCardGradient: [Color] {
+        colorScheme == .dark
+            ? [Color(red: 0.10, green: 0.11, blue: 0.15), Color(red: 0.17, green: 0.19, blue: 0.26)]
+            : [Color(.systemBackground), Color(.secondarySystemBackground)]
+    }
+    private var iCardLabelColor:  Color { colorScheme == .dark ? .white.opacity(0.50) : Color(.secondaryLabel) }
+    private var iCardValueColor:  Color { colorScheme == .dark ? .white               : Color(.label) }
+    private var iCardSubtleColor: Color { colorScheme == .dark ? .white.opacity(0.35) : Color(.tertiaryLabel) }
+    private var iCardBarRest:     Color { colorScheme == .dark ? .white.opacity(0.22) : .black.opacity(0.10) }
+    private var iCardBarZero:     Color { colorScheme == .dark ? .white.opacity(0.05) : .black.opacity(0.04) }
+    private var iCardBarLabel:    Color { colorScheme == .dark ? .white.opacity(0.30) : Color(.tertiaryLabel) }
+    private var iCardDivider:     Color { colorScheme == .dark ? .white.opacity(0.08) : Color(.separator).opacity(0.5) }
+    private var iCardHoleColor:   Color {
+        colorScheme == .dark
+            ? Color(red: 0.059, green: 0.090, blue: 0.165)
+            : Color(.systemBackground)
+    }
+    private var iRangeActiveBg:   Color { colorScheme == .dark ? .white.opacity(0.92) : Color(.label).opacity(0.10) }
+    private var iRangeActiveText: Color { colorScheme == .dark ? .black               : Color(.label) }
+    private var iRangeInactiveTxt:Color { colorScheme == .dark ? .white.opacity(0.55) : Color(.secondaryLabel) }
+
+    @ViewBuilder
+    private func iCardShell<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        ZStack(alignment: .topTrailing) {
+            LinearGradient(colors: iCardGradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+            Circle().fill(Color.orange).frame(width: 160, height: 160).blur(radius: 50).offset(x: 40, y: -55)
+                .opacity(colorScheme == .dark ? 0.26 : 0.18)
+            Circle().fill(Color(red: 0.0, green: 0.48, blue: 1.0)).frame(width: 120, height: 120).blur(radius: 60).offset(x: -110, y: 60)
+                .opacity(colorScheme == .dark ? 0.16 : 0.10)
+            content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            VStack {
+                Spacer()
+                LinearGradient(colors: [.orange, .orange.opacity(0)], startPoint: .leading, endPoint: .trailing)
+                    .frame(height: 3)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .shadow(color: .black.opacity(0.18), radius: 14, y: 5)
+    }
+
+    private func iFmtShort(_ v: Double) -> String {
+        if v >= 1_000_000 { return String(format: "R%.1fM", v / 1_000_000) }
+        if v >= 1_000     { return "R\(Int(v / 1_000))k" }
+        return "R\(Int(v))"
+    }
+
+    private func iMiniBar(item: (label: String, value: Double, isCurrent: Bool),
+                          maxVal: Double, maxH: CGFloat, tint: Color) -> some View {
+        let pct:  CGFloat = item.value > 0 ? CGFloat(item.value / maxVal) : 0
+        let barH: CGFloat = item.value > 0 ? max(3, pct * maxH) : 2
+        let bg: Color     = item.value == 0 ? iCardBarZero : (item.isCurrent ? tint : iCardBarRest)
+        return VStack(spacing: 4) {
+            Capsule().fill(bg).frame(height: barH)
+            Text(item.label)
+                .font(.system(size: 7.5, weight: item.isCurrent ? .bold : .regular))
+                .foregroundStyle(item.isCurrent ? tint : iCardBarLabel)
+                .fixedSize()
+        }
+        .frame(maxWidth: .infinity, alignment: .bottom)
+    }
+
+    private var iRangeTabBar: some View {
+        HStack(spacing: 2) {
+            ForEach(["MTD", "QTD", "YTD", "FY"], id: \.self) { key in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { vm.range = key }
+                } label: {
+                    Text(key)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(vm.range == key ? iRangeActiveText : iRangeInactiveTxt)
+                        .padding(.horizontal, 7).padding(.vertical, 5)
+                        .background(
+                            vm.range == key ? iRangeActiveBg : .clear,
+                            in: RoundedRectangle(cornerRadius: 6)
+                        )
+                }
+            }
+        }
+    }
+
+    // MARK: - Financial Overview Card
+
+    private var iFinancialOverviewCard: some View {
+        let rev = vm.revenue, exp = vm.expenses
+        let net = rev - exp, pl = abs(net)
+        let isProfit = net >= 0
+        let plColor = isProfit
+            ? Color(red: 0.06, green: 0.73, blue: 0.51)
+            : Color(red: 0.94, green: 0.27, blue: 0.27)
+        let colors: [Color] = [.orange, Color(red: 0.56, green: 0.56, blue: 0.58), plColor]
+        let labels  = ["Revenue", "Expenses", isProfit ? "Profit" : "Loss"]
+        let values: [Double] = [rev, exp, pl]
+        let total = rev + exp + pl
+        let hasSeg = total > 0
+        let fracs = hasSeg ? [rev/total, exp/total, pl/total] : [1.0/3, 1.0/3, 1.0/3]
+        let percents = fracs.map { Int(round($0 * 100)) }
+        let outerRatios: [CGFloat] = [0.98, 1.03, 1.01]
+        var boundaries = [0.0]
+        for f in fracs { boundaries.append(min(boundaries.last! + f, 1.0)) }
+        let st = (0..<3).map { boundaries[$0] }
+        let en = (0..<3).map { boundaries[$0 + 1] }
+        let iconNames = ["icon-revenue-wallet", "icon-expenses-arrow",
+                         isProfit ? "icon-profit-up" : "icon-profit-down"]
+
+        return iCardShell {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("FINANCIAL OVERVIEW")
+                    .font(.system(size: 9.5, weight: .bold))
+                    .tracking(1.8)
+                    .foregroundStyle(iCardLabelColor)
+                    .padding(.bottom, 10)
+
+                HStack(alignment: .center, spacing: 14) {
+                    // Donut
+                    GeometryReader { proxy in
+                        let size = min(proxy.size.width, proxy.size.height)
+                        let center = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
+                        let labelR = size * 0.39
+                        ZStack {
+                            ForEach(0..<3, id: \.self) { k in
+                                let mid   = (st[k] + en[k]) / 2
+                                let angle = (mid * 360 - 90) * .pi / 180
+                                let lp    = CGPoint(x: center.x + CGFloat(cos(angle)) * labelR,
+                                                    y: center.y + CGFloat(sin(angle)) * labelR)
+                                DonutSegment(startFraction: st[k], endFraction: max(st[k], en[k]),
+                                             innerRatio: 0.48, outerRatio: outerRatios[k])
+                                    .fill(colors[k])
+                                    .shadow(color: .black.opacity(0.42), radius: 9, x: 0, y: 6)
+                                DonutEndShadow(fraction: en[k], innerRatio: 0.48, outerRatio: outerRatios[k],
+                                               opacity: k == 1 ? 0.34 : 0.24)
+                                DonutSliceLabel(percent: percents[k], isCompact: fracs[k] < 0.12)
+                                    .frame(width: 46, height: 28)
+                                    .position(lp)
+                            }
+                            Circle()
+                                .fill(iCardHoleColor)
+                                .frame(width: size * 0.50, height: size * 0.50)
+                                .shadow(color: .black.opacity(colorScheme == .dark ? 0.78 : 0.34),
+                                        radius: 14, x: 0, y: 8)
+                            VStack(spacing: 2) {
+                                Text("NET")
+                                    .font(.system(size: 8, weight: .black))
+                                    .foregroundStyle(iCardLabelColor)
+                                    .tracking(0.5)
+                                Text(iFmtShort(pl))
+                                    .font(.system(size: 14, weight: .black, design: .rounded))
+                                    .foregroundStyle(plColor)
+                                    .minimumScaleFactor(0.6)
+                                    .lineLimit(1)
+                                Text(isProfit ? "profit" : "loss")
+                                    .font(.system(size: 8))
+                                    .foregroundStyle(iCardSubtleColor)
+                            }
+                        }
+                    }
+                    .frame(width: 160, height: 160)
+
+                    // Legend
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(0..<3, id: \.self) { k in
+                            HStack(alignment: .center, spacing: 6) {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(colors[k])
+                                    .frame(width: 3, height: 30)
+                                Image(iconNames[k])
+                                    .resizable()
+                                    .renderingMode(.template)
+                                    .foregroundStyle(colors[k])
+                                    .frame(width: 22, height: 22)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(labels[k])
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundStyle(iCardLabelColor)
+                                        .textCase(.uppercase)
+                                    Text(iFmtShort(values[k]))
+                                        .font(.system(size: 14, weight: .black, design: .rounded))
+                                        .foregroundStyle(iCardValueColor)
+                                        .minimumScaleFactor(0.65)
+                                        .lineLimit(1)
+                                    Text("\(percents[k])% of total")
+                                        .font(.system(size: 8, weight: .medium))
+                                        .foregroundStyle(iCardSubtleColor)
+                                        .lineLimit(1)
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(18)
+            .frame(maxHeight: .infinity)
+        }
+    }
+
+    // MARK: - Revenue Card
+
+    private var iRevenueCard: some View {
+        let data   = vm.monthlyData
+        let maxVal = max(data.map(\.value).max() ?? 0, 1)
+
+        return iCardShell {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .center) {
+                    Text("TOTAL REVENUE")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .tracking(1.8)
+                        .foregroundStyle(iCardLabelColor)
+                    Spacer()
+                    iRangeTabBar
+                }
+                .padding(.bottom, 12)
+
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    if vm.isLoading {
+                        RoundedRectangle(cornerRadius: 8).fill(iCardBarZero).frame(width: 140, height: 36)
+                    } else {
+                        Text(iFmtShort(vm.rangeRevenue))
+                            .font(.system(size: 36, weight: .heavy, design: .rounded))
+                            .foregroundStyle(iCardValueColor)
+                            .minimumScaleFactor(0.5)
+                            .lineLimit(1)
+                    }
+                    Text("+12.4%")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Color.orange)
+                }
+
+                Text("vs. prior period")
+                    .font(.system(size: 11))
+                    .foregroundStyle(iCardSubtleColor)
+                    .padding(.top, 2)
+
+                Spacer(minLength: 0)
+
+                HStack(alignment: .bottom, spacing: 3) {
+                    ForEach(Array(data.enumerated()), id: \.offset) { _, item in
+                        iMiniBar(item: item, maxVal: maxVal, maxH: 44, tint: .orange)
+                    }
+                }
+                .frame(height: 60, alignment: .bottom)
+            }
+            .padding(18)
+            .frame(maxHeight: .infinity)
+        }
+    }
+
+    // MARK: - Status Pill
+
+    private func iStatusPill(label: String, value: Double, count: Int, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 5) {
+                Circle().fill(color).frame(width: 6, height: 6)
+                Text(label.uppercased())
+                    .font(.system(size: 8, weight: .bold))
+                    .tracking(0.6)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Text(iFmtShort(value))
+                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .foregroundStyle(color)
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+            Text("\(count) invoice\(count == 1 ? "" : "s")")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    // MARK: - Top Expenses Card
+
+    private var iTopExpensesCard: some View {
+        let items = vm.topExpenses
+        return VStack(alignment: .leading, spacing: 0) {
+            iCardShell {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Text("TOP · EXPENSES")
+                            .font(.system(size: 9.5, weight: .bold))
+                            .tracking(1.5)
+                            .foregroundStyle(iCardLabelColor)
+                        Spacer()
+                        Text("VIEW ALL →")
+                            .font(.system(size: 10, weight: .bold))
+                            .tracking(1)
+                            .foregroundStyle(Color.orange)
+                    }
+                    .padding(.bottom, 12)
+
+                    if items.isEmpty {
+                        Spacer()
+                        Text("No expenses recorded")
+                            .font(.system(size: 13))
+                            .foregroundStyle(iCardSubtleColor)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        Spacer()
+                    } else {
+                        ForEach(Array(items.enumerated()), id: \.element.id) { idx, item in
+                            if idx > 0 { Divider().overlay(iCardDivider) }
+                            HStack(spacing: 12) {
+                                Text("\(idx + 1)")
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundStyle(iCardSubtleColor)
+                                    .frame(width: 16)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(item.name)
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(iCardValueColor)
+                                        .lineLimit(1)
+                                    if let d = item.date {
+                                        Text(d, format: .dateTime.day().month(.abbreviated).year())
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(iCardSubtleColor)
+                                    }
+                                }
+                                Spacer()
+                                Text(iFmtShort(item.amount))
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundStyle(iCardValueColor)
+                            }
+                            .padding(.vertical, 10)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+                .padding(18)
+                .frame(maxHeight: .infinity)
+            }
+        }
+    }
+
+    // MARK: - Top Customers Card
+
+    private var iTopCustomersCard: some View {
+        let customers = vm.topCustomers
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("TOP CUSTOMERS")
+                    .font(.system(size: 9.5, weight: .bold))
+                    .tracking(1.5)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("CRM →")
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(1)
+                    .foregroundStyle(Color.orange)
+            }
+            .padding(.bottom, 12)
+
+            if customers.isEmpty {
+                Text("No paid invoices yet")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(Array(customers.enumerated()), id: \.element.name) { idx, c in
+                    if idx > 0 { Divider().padding(.leading, 52) }
+                    HStack(spacing: 12) {
+                        Text("\(idx + 1)")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 16)
+                        ZStack {
+                            Circle().fill(Color.orange.opacity(0.15)).frame(width: 36, height: 36)
+                            Text(c.initials)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(Color.orange)
+                        }
+                        Text(c.name)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        Spacer()
+                        Text(iFmtShort(c.ltv))
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundStyle(.primary)
+                    }
+                    .padding(.vertical, 9)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, minHeight: 180, alignment: .topLeading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20))
+        .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
+    }
+
+    // MARK: - Domain Renewals Card
+
+    private var iDomainRenewalsCard: some View {
+        iCardShell {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("DOMAIN RENEWALS")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .tracking(1.5)
+                        .foregroundStyle(iCardLabelColor)
+                    Spacer()
+                    Text("MANAGE →")
+                        .font(.system(size: 10, weight: .bold))
+                        .tracking(1)
+                        .foregroundStyle(Color.orange)
+                }
+                .padding(.bottom, 14)
+
+                LazyVGrid(
+                    columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
+                    spacing: 12
+                ) {
+                    ForEach(vm.domainItems) { domain in
+                        HStack(spacing: 10) {
+                            Image(systemName: "network")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color.orange)
+                                .frame(width: 30, height: 30)
+                                .background(Color.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(domain.name)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(iCardValueColor)
+                                    .lineLimit(1)
+                                if let expiry = domain.expiryDate {
+                                    Text("Renews \(expiry, style: .date)")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(iCardSubtleColor)
+                                }
+                            }
+
+                            Spacer()
+
+                            if let days = domain.daysLeft {
+                                Text(days <= 0 ? "EXPIRED" : "\(days)d")
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundStyle(domain.urgencyColor)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(domain.urgencyColor.opacity(0.18), in: Capsule())
+                            }
+                        }
+                        .padding(12)
+                        .background(Color.white.opacity(colorScheme == .dark ? 0.05 : 0.55),
+                                    in: RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+            }
+            .padding(18)
+        }
+    }
+
+    // MARK: - Workspace Modules (3-column grid)
+
+    private var iModulesSection: some View {
+        let items: [(label: String, icon: String, count: Int)] = [
+            ("Contacts",     "person.2.fill",        vm.contactCount),
+            ("Open Tickets", "ticket.fill",           vm.ticketCount),
+            ("Messages",     "message.fill",          vm.messageCount),
+            ("Calls Logged", "phone.fill",            vm.callCount),
+            ("Domains",      "network",               vm.domainCount),
+            ("Users",        "person.badge.key.fill", vm.userCount),
+        ]
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Workspace")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                Spacer()
+                Text("\(items.count) modules")
+                    .font(.system(size: 9, weight: .semibold))
+                    .tracking(0.8)
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+            }
+
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10),
+                    GridItem(.flexible(), spacing: 10),
+                ],
+                spacing: 10
+            ) {
+                ForEach(items, id: \.label) { item in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: item.icon)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color.orange)
+                            Spacer()
+                        }
+                        Text(vm.isLoading ? "—" : "\(item.count)")
+                            .font(.system(size: 26, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.primary)
+                            .minimumScaleFactor(0.6)
+                            .lineLimit(1)
+                        Text(item.label)
+                            .font(.system(size: 8.5, weight: .bold))
+                            .tracking(0.4)
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(.secondarySystemGroupedBackground),
+                                in: RoundedRectangle(cornerRadius: 16))
+                }
+            }
+        }
+    }
+}

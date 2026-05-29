@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - View model
 
@@ -252,7 +253,17 @@ struct NewQuoteSheet: View {
     @State private var items:       [DraftItem] = [DraftItem()]
     @State private var saving       = false
     @State private var error        = ""
-    @State private var showScanner  = false
+    @State private var showScanner      = false
+    @State private var showUploadPicker = false
+    @State private var isParsing        = false
+    @State private var parseError:      String?
+    @State private var showParseError   = false
+    @State private var uploadedDocId:   String?   // sourceDocumentId for the created quote
+
+    // Contact selection
+    @State private var contacts:        [CRMContact] = []
+    @State private var selectedContact: CRMContact?  = nil
+    @State private var showContactPicker = false
 
     private var subtotal: Double    { items.reduce(0) { $0 + $1.total } }
     private var tax: Double         { subtotal * ((Double(taxRate) ?? 0) / 100) }
@@ -262,16 +273,44 @@ struct NewQuoteSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                // ── Client ─────────────────────────────────────────────────
+                Section("Client") {
+                    if let contact = selectedContact {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(contact.displayName).font(.subheadline.bold())
+                                if let company = contact.companyName, !company.isEmpty {
+                                    Text(company).font(.caption).foregroundStyle(.orange)
+                                }
+                            }
+                            Spacer()
+                            Button("Change") { showContactPicker = true }
+                                .font(.caption.bold()).foregroundStyle(.orange)
+                        }
+                    } else {
+                        Button { showContactPicker = true } label: {
+                            HStack {
+                                Image(systemName: "person.crop.circle.badge.plus").foregroundStyle(.orange)
+                                Text("Select a client (optional)").foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
                 Section {
-                    Button {
-                        showScanner = true
-                    } label: {
+                    Button { showScanner = true } label: {
                         Label("Scan Vendor Quote", systemImage: "doc.text.magnifyingglass")
-                            .frame(maxWidth: .infinity)
-                            .foregroundStyle(.orange)
+                            .frame(maxWidth: .infinity).foregroundStyle(.orange)
+                    }
+                    Button { showUploadPicker = true } label: {
+                        Label("Upload Document", systemImage: "arrow.up.doc")
+                            .frame(maxWidth: .infinity).foregroundStyle(.orange)
                     }
                 } footer: {
-                    Text("Scan a vendor's quote to auto-fill line items, then adjust before saving.")
+                    Text("Scan or upload a vendor quote to auto-fill line items.")
                 }
 
                 Section("Project") {
@@ -378,7 +417,89 @@ struct NewQuoteSheet: View {
                     showScanner = false
                 })
             }
+            .fileImporter(
+                isPresented: $showUploadPicker,
+                allowedContentTypes: [.pdf, .jpeg, .png, .image],
+                allowsMultipleSelection: false
+            ) { result in
+                if case .success(let urls) = result, let url = urls.first {
+                    Task { await handleUploadedDoc(url: url) }
+                }
+            }
+            .task { await loadContacts() }
+            .sheet(isPresented: $showContactPicker) {
+                ContactPickerSheet(
+                    contacts: contacts,
+                    onSelect: { contact in selectedContact = contact; showContactPicker = false },
+                    onCancel: { showContactPicker = false }
+                )
+            }
+            .alert("Could not parse document", isPresented: $showParseError) {
+                Button("OK") {}
+            } message: {
+                Text(parseError ?? "The document could not be read. You can still fill in the details manually.")
+            }
+            .overlay {
+                if isParsing {
+                    ZStack {
+                        Color.black.opacity(0.35).ignoresSafeArea()
+                        VStack(spacing: 16) {
+                            ProgressView().scaleEffect(1.4).tint(.white)
+                            Text("Reading vendor quote…")
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.white)
+                            Text("Extracting line items")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.7))
+                        }
+                        .padding(28)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+                    }
+                }
+            }
         }
+    }
+
+    private func loadContacts() async {
+        if let res: ContactsResponse = try? await APIService.shared.get("/crm/contacts") {
+            contacts = res.contacts
+        }
+    }
+
+    private func handleUploadedDoc(url: URL) async {
+        guard url.startAccessingSecurityScopedResource() else { return }
+        defer { url.stopAccessingSecurityScopedResource() }
+        guard let data = try? Data(contentsOf: url) else { return }
+        let mimeType = url.pathExtension.lowercased() == "pdf" ? "application/pdf" : "image/jpeg"
+
+        isParsing = true
+        do {
+            // OCR + AI parse → pre-populate form
+            let parsed = try await DocumentService.shared.parseVendorQuoteFromData(data, mimeType: mimeType)
+
+            if let name = parsed.projectName, !name.isEmpty { projectName = name }
+            if let n    = parsed.notes,       !n.isEmpty    { notes = n }
+            if !parsed.lineItems.isEmpty {
+                items = parsed.lineItems.map { li in
+                    var d = DraftItem()
+                    d.description = li.description
+                    d.quantity    = String(format: "%g", li.quantity)
+                    d.unitPrice   = String(format: "%g", li.unitPrice)
+                    return d
+                }
+            }
+
+            // Upload original file to document storage in background
+            let doc = try? await DocumentService.shared.uploadFile(
+                data: data, fileName: url.lastPathComponent,
+                mimeType: mimeType, type: .vendorQuote
+            )
+            uploadedDocId = doc?.id
+        } catch {
+            parseError     = error.localizedDescription
+            showParseError = true
+        }
+        isParsing = false
     }
 
     private func save() async {
@@ -399,7 +520,7 @@ struct NewQuoteSheet: View {
                 ? ISO8601DateFormatter().string(from: validUntil)
                 : nil
             let body = CreateMobileQuoteRequest(
-                contactId:   nil,
+                contactId:   selectedContact?.id,
                 projectName: projectName.isEmpty ? nil : projectName.trimmingCharacters(in: .whitespaces),
                 validUntil:  validUntilString,
                 notes:       notes.isEmpty ? nil : notes,

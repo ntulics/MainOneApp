@@ -1,5 +1,6 @@
 import SwiftUI
 import QuickLook
+import UniformTypeIdentifiers
 
 // MARK: - View model
 
@@ -7,14 +8,13 @@ import QuickLook
 final class DocumentsViewModel: ObservableObject {
     @Published var documents: [ScannedDocument] = []
     @Published var selectedType: DocumentType? = nil   // nil = all types
-    @Published var isLoading   = false
+    @Published var isLoading    = false
     @Published var errorMessage: String?
 
     func load() async {
-        isLoading   = true
+        isLoading    = true
         errorMessage = nil
         do {
-            // Pass selectedType filter; nil means all documents
             documents = try await DocumentService.shared.getDocuments(type: selectedType)
         } catch {
             errorMessage = error.localizedDescription
@@ -28,109 +28,340 @@ final class DocumentsViewModel: ObservableObject {
     }
 }
 
+// MARK: - File upload coordinator
+
+@MainActor
+final class FileUploadCoordinator: ObservableObject {
+    @Published var isUploading = false
+    @Published var errorMessage: String?
+    @Published var uploadedDoc: ScannedDocument?
+
+    func upload(url: URL, type: DocumentType) async {
+        isUploading  = true
+        errorMessage = nil
+        do {
+            guard url.startAccessingSecurityScopedResource() else { throw URLError(.fileDoesNotExist) }
+            defer { url.stopAccessingSecurityScopedResource() }
+            let data     = try Data(contentsOf: url)
+            let mimeType = url.pathExtension.lowercased() == "pdf" ? "application/pdf" : "image/jpeg"
+            uploadedDoc  = try await DocumentService.shared.uploadFile(
+                data:     data,
+                fileName: url.lastPathComponent,
+                mimeType: mimeType,
+                type:     type
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isUploading = false
+    }
+}
+
 // MARK: - Main view
 
 struct DocumentsView: View {
-    @StateObject private var vm = DocumentsViewModel()
-    @State private var viewingDoc: ScannedDocument?
-    @State private var quickLookURL: URL?
-    @State private var showQuickLook = false
-    @State private var isLoadingDoc  = false
-    @State private var viewError: String?
-    @State private var showViewError = false
+    var initialType: DocumentType? = nil
+
+    @StateObject private var vm           = DocumentsViewModel()
+    @StateObject private var uploader     = FileUploadCoordinator()
+    @EnvironmentObject private var appState: AppState
+
+    @State private var viewingDoc:    ScannedDocument?
+    @State private var quickLookURL:  URL?
+    @State private var showQuickLook  = false
+    @State private var isLoadingDoc   = false
+    @State private var viewError:     String?
+    @State private var showViewError  = false
+    @State private var hasSetInitial  = false
+
+    @State private var showUploadPicker = false
+    @State private var signingDoc:     ScannedDocument?
+
+    // iPad split-view state
+    private let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+    @State private var selectedDoc: ScannedDocument? = nil
 
     var body: some View {
+        if isIPad {
+            iPadLayout
+        } else {
+            phoneLayout
+        }
+    }
+
+    // MARK: - iPad split layout
+
+    private var iPadLayout: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Type filter chips
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        FilterChip(label: "All", isSelected: vm.selectedType == nil, tint: .orange) {
-                            vm.selectedType = nil
-                            Task { await vm.load() }
-                        }
-                        ForEach(DocumentType.allCases, id: \.self) { type in
-                            FilterChip(label: type.displayName, isSelected: vm.selectedType == type, tint: .orange) {
-                                vm.selectedType = type
-                                Task { await vm.load() }
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 10)
+            HStack(spacing: 0) {
+                // Left: List
+                VStack(spacing: 0) {
+                    typeFilterBar
+                    Divider()
+                    documentListContent(onTap: { doc in selectedDoc = doc })
                 }
-                .background(Color(.systemGroupedBackground))
+                .frame(maxWidth: 360)
 
                 Divider()
 
-                Group {
-                    if vm.isLoading && vm.documents.isEmpty {
-                        ProgressView("Loading…")
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if let err = vm.errorMessage {
-                        VStack(spacing: 12) {
-                            Image(systemName: "exclamationmark.triangle")
-                                .font(.largeTitle)
-                                .foregroundStyle(.orange)
-                            Text(err)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                            Button("Retry") { Task { await vm.load() } }
-                                .buttonStyle(.borderedProminent)
-                                .tint(.orange)
-                        }
-                        .padding()
+                // Right: Preview
+                if let doc = selectedDoc {
+                    iPadDocPreview(doc: doc)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else if vm.documents.isEmpty {
-                        EmptyStateView(
-                            icon:    "folder",
-                            title:   "No Documents",
-                            message: vm.selectedType == nil
-                                ? "Scan documents with the iOS app or upload PDFs on the web."
-                                : "No \(vm.selectedType!.displayName.lowercased()) documents yet."
-                        )
-                    } else {
-                        List {
-                            ForEach(vm.documents) { doc in
-                                DocumentRow(document: doc, isLoadingView: isLoadingDoc && viewingDoc?.id == doc.id) {
-                                    Task { await openDocument(doc) }
-                                }
-                            }
-                            .onDelete { indices in
-                                let items = indices.map { vm.documents[$0] }
-                                Task { for d in items { await vm.delete(d) } }
-                            }
-                        }
-                        .listStyle(.plain)
-                        .refreshable { await vm.load() }
+                } else {
+                    VStack(spacing: 12) {
+                        Image(systemName: "doc.text.magnifyingglass")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.tertiary)
+                        Text("Select a document to preview")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemGroupedBackground))
+                }
+            }
+            .navigationTitle(navigationTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbarContent }
+            .fileImporter(isPresented: $showUploadPicker,
+                          allowedContentTypes: allowedUploadTypes,
+                          allowsMultipleSelection: false) { result in
+                if case .success(let urls) = result, let url = urls.first {
+                    Task { await uploader.upload(url: url, type: vm.selectedType ?? .general); await vm.load() }
+                }
+            }
+            .sheet(item: $signingDoc) { doc in DocumentSigningView(document: doc) }
+            .task {
+                if !hasSetInitial { vm.selectedType = initialType; hasSetInitial = true }
+                await vm.load()
+            }
+            .alert("Error", isPresented: $showViewError) { Button("OK") {} }
+                message: { Text(viewError ?? "Could not open document.") }
+        }
+    }
+
+    // MARK: - iPhone layout
+
+    private var phoneLayout: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                typeFilterBar
+                Divider()
+                documentListContent { doc in Task { await openDocument(doc) } }
+            }
+            .navigationTitle(navigationTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbarContent }
+            .sheet(isPresented: $showQuickLook, onDismiss: cleanupTempFile) {
+                if let url = quickLookURL { QuickLookPreview(url: url).ignoresSafeArea() }
+            }
+            .fileImporter(isPresented: $showUploadPicker,
+                          allowedContentTypes: allowedUploadTypes,
+                          allowsMultipleSelection: false) { result in
+                if case .success(let urls) = result, let url = urls.first {
+                    Task { await uploader.upload(url: url, type: vm.selectedType ?? .general); await vm.load() }
+                }
+            }
+            .sheet(item: $signingDoc) { doc in DocumentSigningView(document: doc) }
+            .task {
+                if !hasSetInitial { vm.selectedType = initialType; hasSetInitial = true }
+                await vm.load()
+            }
+            .alert("Error", isPresented: $showViewError) { Button("OK") {} }
+                message: { Text(viewError ?? "Could not open document.") }
+        }
+    }
+
+    // MARK: - iPad document preview panel
+
+    @ViewBuilder
+    private func iPadDocPreview(doc: ScannedDocument) -> some View {
+        VStack(spacing: 0) {
+            // Toolbar for preview actions
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(doc.fileName)
+                        .font(.headline)
+                        .lineLimit(1)
+                    Text(doc.type.displayName + " · " + doc.formattedDate)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button {
+                    signingDoc = doc
+                } label: {
+                    Label("Sign", systemImage: "signature")
+                        .font(.system(size: 13, weight: .semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.orange.opacity(0.15), in: Capsule())
+                        .foregroundStyle(.orange)
+                }
+                Button { Task { await loadAndShowPreview(doc) } } label: {
+                    Label("Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(.secondarySystemGroupedBackground), in: Capsule())
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(.systemGroupedBackground))
+
+            Divider()
+
+            // QuickLook inline preview
+            if isLoadingDoc {
+                ProgressView("Loading…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let url = quickLookURL, viewingDoc?.id == doc.id {
+                QuickLookPreview(url: url)
+            } else {
+                Button { Task { await loadAndShowPreview(doc) } } label: {
+                    VStack(spacing: 16) {
+                        Image(systemName: doc.type.iconName)
+                            .font(.system(size: 56))
+                            .foregroundStyle(.orange)
+                        Text("Tap to load preview")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Text(doc.fileSizeFormatted)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemGroupedBackground))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .sheet(isPresented: $showQuickLook, onDismiss: cleanupTempFile) {
+            if let url = quickLookURL { QuickLookPreview(url: url).ignoresSafeArea() }
+        }
+        .onChange(of: doc.id) { _ in
+            quickLookURL  = nil
+            viewingDoc    = nil
+        }
+    }
+
+    // MARK: - Type filter bar
+
+    private var typeFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                FilterChip(label: "All", isSelected: vm.selectedType == nil, tint: .orange) {
+                    vm.selectedType = nil
+                    Task { await vm.load() }
+                }
+                ForEach(DocumentType.allCases, id: \.self) { type in
+                    FilterChip(label: type.displayName, isSelected: vm.selectedType == type, tint: .orange) {
+                        vm.selectedType = type
+                        Task { await vm.load() }
                     }
                 }
             }
-            .navigationTitle("Documents")
-            .task { await vm.load() }
-            .alert("Error", isPresented: $showViewError) {
-                Button("OK") {}
-            } message: {
-                Text(viewError ?? "Could not open document.")
-            }
-            .sheet(isPresented: $showQuickLook, onDismiss: cleanupTempFile) {
-                if let url = quickLookURL {
-                    QuickLookPreview(url: url)
-                        .ignoresSafeArea()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+        }
+        .background(Color(.systemGroupedBackground))
+    }
+
+    // MARK: - Document list
+
+    @ViewBuilder
+    private func documentListContent(onTap: @escaping (ScannedDocument) -> Void) -> some View {
+        Group {
+            if vm.isLoading && vm.documents.isEmpty {
+                ProgressView("Loading…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let err = vm.errorMessage {
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.largeTitle).foregroundStyle(.orange)
+                    Text(err).font(.subheadline).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("Retry") { Task { await vm.load() } }
+                        .buttonStyle(.borderedProminent).tint(.orange)
                 }
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if vm.documents.isEmpty {
+                EmptyStateView(
+                    icon:    "folder",
+                    title:   "No Documents",
+                    message: vm.selectedType == nil
+                        ? "Scan or upload documents to get started."
+                        : "No \(vm.selectedType!.displayName.lowercased()) documents yet."
+                )
+            } else {
+                List {
+                    ForEach(vm.documents) { doc in
+                        DocumentRow(
+                            document:      doc,
+                            isLoadingView: isLoadingDoc && viewingDoc?.id == doc.id,
+                            onSign:        { signingDoc = doc },
+                            onTap:         { onTap(doc) }
+                        )
+                    }
+                    .onDelete { indices in
+                        let items = indices.map { vm.documents[$0] }
+                        Task { for d in items { await vm.delete(d) } }
+                    }
+                }
+                .listStyle(.plain)
+                .refreshable { await vm.load() }
             }
         }
     }
 
-    // MARK: - Document viewer
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        // Scan button (only for scannable types)
+        if let type = vm.selectedType, [DocumentType.receipt, .vendorQuote, .general].contains(type) {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    appState.scannerType = type
+                    appState.showScanner = true
+                } label: {
+                    Label("Scan", systemImage: "camera.viewfinder")
+                }
+                .tint(.orange)
+            }
+        }
+
+        ToolbarItem(placement: .topBarTrailing) {
+            Button { showUploadPicker = true } label: {
+                Label("Upload", systemImage: "arrow.up.doc")
+            }
+            .tint(.orange)
+        }
+    }
+
+    // MARK: - Allowed upload types
+
+    private var allowedUploadTypes: [UTType] {
+        vm.selectedType == .invoice ? [.pdf] : [.pdf, .jpeg, .png, .image]
+    }
+
+    // MARK: - Navigation title
+
+    private var navigationTitle: String {
+        guard let type = vm.selectedType else { return "Documents" }
+        return type.displayName
+    }
+
+    // MARK: - Helpers
 
     private func openDocument(_ doc: ScannedDocument) async {
         viewingDoc   = doc
         isLoadingDoc = true
         do {
-            let url = try await DocumentService.shared.viewDocument(doc)
-            quickLookURL = url
+            quickLookURL = try await DocumentService.shared.viewDocument(doc)
             showQuickLook = true
         } catch {
             viewError     = error.localizedDescription
@@ -138,6 +369,13 @@ struct DocumentsView: View {
         }
         isLoadingDoc = false
         viewingDoc   = nil
+    }
+
+    private func loadAndShowPreview(_ doc: ScannedDocument) async {
+        viewingDoc   = doc
+        isLoadingDoc = true
+        quickLookURL = try? await DocumentService.shared.viewDocument(doc)
+        isLoadingDoc = false
     }
 
     private func cleanupTempFile() {
@@ -153,69 +391,77 @@ struct DocumentsView: View {
 struct DocumentRow: View {
     let document:      ScannedDocument
     let isLoadingView: Bool
+    var onSign:        (() -> Void)? = nil
     let onTap:         () -> Void
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.orange.opacity(0.1))
-                        .frame(width: 40, height: 40)
-                    if isLoadingView {
-                        ProgressView()
-                            .scaleEffect(0.75)
-                    } else {
-                        Image(systemName: document.type.iconName)
-                            .font(.title3)
-                            .foregroundStyle(.orange)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(document.fileName)
-                        .font(.subheadline.bold())
-                        .lineLimit(1)
-                        .foregroundStyle(.primary)
-
-                    HStack(spacing: 6) {
-                        Text(document.type.displayName)
-                            .font(.caption)
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.orange.opacity(0.8), in: Capsule())
-
-                        Text(document.formattedDate)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        if !document.fileSizeFormatted.isEmpty {
-                            Text("·")
-                                .foregroundStyle(.secondary)
-                            Text(document.fileSizeFormatted)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+        HStack(spacing: 14) {
+            Button(action: onTap) {
+                HStack(spacing: 14) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.orange.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        if isLoadingView {
+                            ProgressView().scaleEffect(0.75)
+                        } else {
+                            Image(systemName: document.type.iconName)
+                                .font(.title3)
+                                .foregroundStyle(.orange)
                         }
                     }
 
-                    if let notes = document.notes, !notes.isEmpty {
-                        Text(notes)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(document.fileName)
+                            .font(.subheadline.bold())
                             .lineLimit(1)
+                            .foregroundStyle(.primary)
+
+                        HStack(spacing: 6) {
+                            Text(document.type.displayName)
+                                .font(.caption)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.8), in: Capsule())
+
+                            Text(document.formattedDate)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            if !document.fileSizeFormatted.isEmpty {
+                                Text("·").foregroundStyle(.secondary)
+                                Text(document.fileSizeFormatted)
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+
+                        if let notes = document.notes, !notes.isEmpty {
+                            Text(notes).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        }
                     }
+
+                    Spacer()
                 }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
             }
-            .padding(.vertical, 4)
+            .buttonStyle(.plain)
+
+            // Sign button
+            if let sign = onSign {
+                Button(action: sign) {
+                    Image(systemName: "signature")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.orange)
+                        .frame(width: 32, height: 32)
+                        .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+            }
+
+            Image(systemName: "chevron.right")
+                .font(.caption).foregroundStyle(.tertiary)
         }
-        .buttonStyle(.plain)
+        .padding(.vertical, 4)
     }
 }
 
