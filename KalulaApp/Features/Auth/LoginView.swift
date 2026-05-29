@@ -33,9 +33,11 @@ private extension Color {
 
 private struct DonutSegment {
     let color: Color
-    let fraction: Double   // 0…1
+    let fraction: Double
 }
 
+/// Replicates the real dashboard donut: thick arcs with coloured glow shadow
+/// and a secondary dark shadow beneath each segment for the 3-D raised effect.
 private struct DonutChart: View {
     let segments: [DonutSegment]
     let lineWidth: CGFloat
@@ -46,13 +48,33 @@ private struct DonutChart: View {
             ZStack {
                 ForEach(Array(segments.enumerated()), id: \.offset) { idx, seg in
                     let start = segments.prefix(idx).reduce(0) { $0 + $1.fraction }
-                    // 2° gap between segments (0.0055 of full circle)
-                    let gap: Double = 0.006
+                    let gap: Double = 0.008
+                    let from = start + gap
+                    let to   = start + seg.fraction - gap
+
+                    // Depth shadow (dark, offset downward — gives 3-D lift)
                     Circle()
-                        .trim(from: start + gap, to: start + seg.fraction - gap)
-                        .stroke(seg.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                        .trim(from: from, to: to)
+                        .stroke(Color.black.opacity(0.45),
+                                style: StrokeStyle(lineWidth: lineWidth + 4, lineCap: .round))
                         .rotationEffect(.degrees(-90))
-                        .shadow(color: seg.color.opacity(0.55), radius: 6, x: 0, y: 3)
+                        .offset(y: 4)
+                        .blur(radius: 4)
+
+                    // Coloured glow halo
+                    Circle()
+                        .trim(from: from, to: to)
+                        .stroke(seg.color.opacity(0.40),
+                                style: StrokeStyle(lineWidth: lineWidth + 6, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .blur(radius: 6)
+
+                    // Main arc
+                    Circle()
+                        .trim(from: from, to: to)
+                        .stroke(seg.color,
+                                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
                 }
             }
             .frame(width: size, height: size)
@@ -68,18 +90,20 @@ private struct FinancialOverviewCard: View {
     var body: some View {
         VStack(spacing: 8) {
 
-            // ── Financial Overview ─────────────────────────────────────
-            ZStack(alignment: .bottomLeading) {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+            // ── Financial Overview card ────────────────────────────────
+            ZStack(alignment: .bottom) {
+                // Card background
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(Color.m1Surface)
 
-                // Orange glow — matches real dashboard card
-                Color.m1Orange.opacity(0.20)
-                    .blur(radius: 50)
-                    .frame(width: 180, height: 100)
-                    .offset(x: 0, y: 20)
+                // Blue glow at bottom — matches real dashboard
+                Color.m1Primary.opacity(0.25)
+                    .blur(radius: 40)
+                    .frame(height: 60)
+                    .padding(.horizontal, 40)
+                    .offset(y: 10)
 
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .strokeBorder(Color.m1Border, lineWidth: 0.5)
 
                 VStack(spacing: 0) {
@@ -93,60 +117,76 @@ private struct FinancialOverviewCard: View {
                         HStack(spacing: 4) {
                             ForEach(0..<3, id: \.self) { i in
                                 Circle()
-                                    .fill(i == 0 ? Color.white.opacity(0.80) : Color.white.opacity(0.20))
+                                    .fill(i == 0 ? Color.white.opacity(0.85) : Color.white.opacity(0.22))
                                     .frame(width: 5, height: 5)
                             }
                         }
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 10)
 
-                    // Chart + legend
-                    HStack(alignment: .center, spacing: 16) {
-                        // Donut — thick stroke matching real dashboard
+                    // Donut + legend
+                    HStack(alignment: .center, spacing: 10) {
+
+                        // ── Donut ──────────────────────────────────────
                         ZStack {
                             DonutChart(
                                 segments: [
-                                    DonutSegment(color: .m1Orange, fraction: 0.50),
-                                    DonutSegment(color: .m1Grey,   fraction: 0.19),
-                                    DonutSegment(color: .m1Green,  fraction: 0.31),
+                                    DonutSegment(color: Color.m1Primary, fraction: 0.50),
+                                    DonutSegment(color: Color.m1Grey,    fraction: 0.19),
+                                    DonutSegment(color: Color.m1Green,   fraction: 0.31),
                                 ],
-                                lineWidth: 28
+                                lineWidth: 30
                             )
-                            // Dark centre circle
-                            Circle()
-                                .fill(Color.m1Surface)
-                                .frame(width: 88, height: 88)
 
-                            VStack(spacing: 1) {
+                            // Dark centre fill
+                            Circle()
+                                .fill(Color(red: 0.06, green: 0.07, blue: 0.11))
+                                .frame(width: 96, height: 96)
+
+                            VStack(spacing: 2) {
                                 Text("NET")
                                     .font(.system(size: 8, weight: .semibold))
-                                    .tracking(1.2)
+                                    .tracking(1.4)
                                     .foregroundStyle(Color.white.opacity(0.40))
                                 Text("R814k")
-                                    .font(.system(size: 17, weight: .bold))
+                                    .font(.system(size: 18, weight: .bold))
                                     .foregroundStyle(Color.m1Green)
                                 Text("profit")
                                     .font(.system(size: 8))
                                     .foregroundStyle(Color.white.opacity(0.35))
                             }
 
-                            percentLabel("50%", angle: -90 + 360 * 0.25,  radius: 80)
-                            percentLabel("19%", angle: -90 + 360 * 0.595, radius: 80)
-                            percentLabel("31%", angle: -90 + 360 * 0.845, radius: 80)
+                            // % labels on each arc
+                            percentLabel("50%", angle: -90 + 360 * 0.25,  radius: 84)
+                            percentLabel("19%", angle: -90 + 360 * 0.595, radius: 84)
+                            percentLabel("31%", angle: -90 + 360 * 0.845, radius: 84)
                         }
-                        .frame(width: 170, height: 170)
+                        .frame(width: 180, height: 180)
 
-                        // Legend
+                        // ── Legend ─────────────────────────────────────
                         VStack(alignment: .leading, spacing: 10) {
-                            legendRow(color: .m1Orange, label: "REVENUE",  value: "R1.6M", sub: "50% of total")
-                            legendRow(color: .m1Grey,   label: "EXPENSES", value: "R586k", sub: "19% of total")
-                            legendRow(color: .m1Green,  label: "PROFIT",   value: "R814k", sub: "31% of total")
+                            legendRow(barColor: Color.m1Primary,
+                                      icon: "icon-revenue-wallet",
+                                      iconColor: Color.m1Primary,
+                                      label: "REVENUE",
+                                      value: "R1.6M", sub: "50% of total")
+                            legendRow(barColor: Color.m1Grey,
+                                      icon: "icon-expenses-arrow",
+                                      iconColor: Color.m1Grey,
+                                      label: "EXPENSES",
+                                      value: "R586k", sub: "19% of total")
+                            legendRow(barColor: Color.m1Green,
+                                      icon: "icon-profit-up",
+                                      iconColor: Color.m1Green,
+                                      label: "PROFIT",
+                                      value: "R814k", sub: "31% of total")
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.trailing, 8)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 12)
                     .padding(.bottom, 16)
                 }
             }
@@ -168,26 +208,36 @@ private struct FinancialOverviewCard: View {
 
     // ── Helpers ────────────────────────────────────────────────────────
 
-    // Stub to satisfy old references (no longer used in body)
-    private let expenseRows:  [(String, String, String)]       = []
-    private let customerRows: [(String, String, Color, String)] = []
-
     @ViewBuilder
     private func percentLabel(_ text: String, angle: Double, radius: CGFloat) -> some View {
         let rad = angle * .pi / 180
         Text(text)
-            .font(.system(size: 9, weight: .semibold))
+            .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(.white)
             .offset(x: radius * CGFloat(cos(rad)),
                     y: radius * CGFloat(sin(rad)))
     }
 
     @ViewBuilder
-    private func legendRow(color: Color, label: String, value: String, sub: String) -> some View {
+    private func legendRow(barColor: Color, icon: String, iconColor: Color,
+                            label: String, value: String, sub: String) -> some View {
         HStack(spacing: 8) {
+            // Coloured vertical bar
             RoundedRectangle(cornerRadius: 2)
-                .fill(color)
-                .frame(width: 3, height: 32)
+                .fill(barColor)
+                .frame(width: 3, height: 36)
+
+            // Icon in circle ring (matches real dashboard SVG icons)
+            ZStack {
+                Circle()
+                    .strokeBorder(iconColor.opacity(0.45), lineWidth: 1)
+                    .frame(width: 26, height: 26)
+                Image(icon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 14, height: 14)
+            }
+
             VStack(alignment: .leading, spacing: 1) {
                 Text(label)
                     .font(.system(size: 8, weight: .semibold))
